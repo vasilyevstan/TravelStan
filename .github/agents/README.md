@@ -9,7 +9,7 @@ their own work, or deploy.
 | `travelstan-architect` | Read-only architecture, provider boundary, privacy, and dependency-ordered contract. |
 | `travelstan-simplifier` | Read-only sealed three-pass simplification/validation and separate synthesis. |
 | `travelstan-developer` | Bounded implementation and focused tests; no Git or deployment authority. |
-| `travelstan-provider-integrity` | Read-only source, terms, freshness, baggage, seller-link, and privacy review. |
+| `travelstan-provider-integrity` | Read-only source/method, terms, freshness, request-cost, baggage, seller-link, retention, and privacy review, including API-wrapped scraping intermediaries. |
 | `travelstan-critic-tester` | Read-only adversarial functional, UX, security, contract, operations review and test execution. |
 | `travelstan-final-validator` | Read-only release acceptance across all accumulated evidence. |
 
@@ -39,4 +39,3 @@ its own prior output. The orchestrator remains responsible for Git, PRs,
 exact-SHA CI, eligible CLI-owned approvals, merges, releases, and stalled
 handoffs. Reuse unchanged-source evidence only by binding its original SHA and
 scope to the final candidate; required final-SHA CI still runs.
-

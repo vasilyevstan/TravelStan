@@ -87,3 +87,76 @@ or airline-direct purchase.
 
 The sealed reports and synthesis receipts are retained in
 [`docs/provider-research-passes/`](provider-research-passes/).
+
+## Private low-volume SerpApi reassessment
+
+**Reassessment date:** 2026-09-19
+**Scenario:** one local user, not publicly deployed, fewer than 20 submitted
+searches per month.
+
+Three new sealed passes used requested advanced model families
+`gpt-6-astra`, `claude-opus-5`, and `grok-4.6`; a separate synthesis used
+`gpt-5.6-terra`. Runtime model identity was not independently verifiable for
+every pass, so model names are execution receipts rather than evidence.
+
+### Decision
+
+SerpApi Google Flights remains `NO_GO` under the unchanged requirements.
+SerpApi explicitly describes the product as scraping Google Flights. Private
+use and low volume improve affordability but do not satisfy the original
+prohibition on scraping services.
+
+SerpApi is at most `CONDITIONAL` for a deliberately revised personal
+experiment. That would require explicit acceptance of a scraping intermediary,
+removal of unproved checked-bag filtering and airline-direct claims, provider
+retention disclosure, strict call caps, and a new architecture/review gate.
+
+### Resolved facts
+
+- [SerpApi Google Flights](https://serpapi.com/google-flights-api) describes
+  its product as scraping Google Flights.
+- [Pricing](https://serpapi.com/pricing) currently lists a free allowance of
+  250 successful searches per month and 50 per hour.
+- Parameter-identical results can be cached for one hour. The
+  [Search Archive API](https://serpapi.com/search-archive-api) can retain
+  completed search output for up to 31 days.
+- [ZeroTrace](https://serpapi.com/zero-trace-mode) is not available on the
+  free plan.
+- The `bags` parameter concerns carry-on bags, not checked bags. Checked-bag
+  evidence in documented responses is free text and cannot safely drive
+  TravelStan's proof-required checked-bag filter.
+- [Booking options](https://serpapi.com/google-flights-booking-options) can
+  identify a reported seller, but documented actions use Google redirects,
+  POST data, or telephone booking. They are not proved airline-controlled
+  purchase URLs.
+
+### Realistic call budget
+
+Assuming 20 round-trip user searches, no cache benefit, current paired-date
+planning, and booking-option enrichment for ten displayed rows:
+
+| Mode | Estimated monthly calls | Free 250 |
+| --- | ---: | --- |
+| Exact | 240 | Fits narrowly |
+| Flexible ±1 | 320 | Does not fit |
+| Flexible ±7 | 800 | Does not fit |
+
+Exact one-way searches with ten enrichments use approximately 220 calls per
+month. These estimates leave little or no capacity for testing, failures, or
+additional alternatives.
+
+### Minimum changes for a personal experiment
+
+1. Explicitly waive the no-scraping-services rule for SerpApi.
+2. Disable live `checked_required` unless structured fare-specific proof is
+   available; free text remains `unknown`.
+3. Do not label Google redirects, phone numbers, or `airline: true` metadata
+   as airline-direct purchase links.
+4. Disclose that route/date/cabin inputs leave the device and that normal
+   provider cache/archive retention applies.
+5. Keep failures explicit and never fall back to synthetic offers.
+6. Keep the API key server-side and out of URLs, HTML, logs, screenshots, and
+   the repository.
+7. Default to exact dates and enforce monthly/hourly call budgets.
+
+No SerpApi credential or implementation is authorized by this reassessment.
