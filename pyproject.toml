@@ -1,0 +1,20 @@
+[project]
+name = "travelstan"
+version = "0.1.0"
+description = "Server-rendered synthetic-demo flight comparison slice"
+requires-python = ">=3.13"
+dependencies = ["Django>=5.2,<5.3"]
+
+[dependency-groups]
+dev = ["ruff>=0.6"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.format]
+quote-style = "double"

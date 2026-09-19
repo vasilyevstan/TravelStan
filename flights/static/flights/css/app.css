@@ -1,0 +1,164 @@
+:root {
+  --ink: #16202c;
+  --muted: #4a5666;
+  --line: #c9d2dd;
+  --accent: #0b4f8a;
+  --warn-bg: #fff4d6;
+  --alert-bg: #fdecea;
+  --bg: #f7f9fc;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 1rem 3rem;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+main, .site-header, footer { max-width: 70rem; margin: 0 auto; }
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+}
+
+.skip-link:focus {
+  position: static;
+  display: inline-block;
+  padding: 0.5rem;
+  background: #fff;
+}
+
+a { color: var(--accent); }
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.25rem; }
+
+.demo-banner {
+  background: var(--warn-bg);
+  border: 2px solid #b8860b;
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.alert {
+  background: var(--alert-bg);
+  border: 2px solid #a32b20;
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.status { font-weight: 600; }
+
+.disclaimer, .price-note, .operated-by { color: var(--muted); font-size: 0.9rem; }
+
+form {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+}
+
+legend { font-weight: 600; padding: 0 0.25rem; }
+
+.field { display: flex; flex-direction: column; gap: 0.25rem; margin: 0 0 0.75rem; }
+
+label { font-weight: 600; }
+
+input, select, button {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  min-height: 2.75rem;
+}
+
+.choice { display: block; margin-bottom: 0.25rem; }
+.choice label { font-weight: 400; }
+
+.field-error { color: #a32b20; font-weight: 600; }
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+caption {
+  caption-side: top;
+  text-align: left;
+  padding: 0.5rem;
+  color: var(--muted);
+}
+
+th, td {
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th { background: #eef3f9; }
+
+td span, th span { display: block; }
+
+.baggage { margin: 0; padding-left: 1.1rem; }
+
+.price { font-weight: 700; }
+
+@media (min-width: 40rem) {
+  button { width: auto; }
+  .field { max-width: 22rem; }
+}
+
+/* Cards stacked layout for narrow screens down to 320px. */
+@media (max-width: 47.99rem) {
+  table, thead, tbody, tr, th, td { display: block; width: 100%; }
+
+  thead { position: absolute; left: -9999px; }
+
+  tr {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: #fff;
+    padding: 0.25rem;
+  }
+
+  th, td { border: none; border-bottom: 1px solid var(--line); }
+
+  tr > *:last-child { border-bottom: none; }
+
+  td::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+}

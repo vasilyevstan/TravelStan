@@ -15,6 +15,15 @@ authority. Pull requests require exact base/head revisions, focused validation
 evidence, provider/privacy impact, risks and rollback, and the applicable
 agent-chain results.
 
+## Current branch-protection status
+
+TravelStan is public as authorized on 2026-09-19. Both `master` and `dev` have
+verified GitHub branch protection: pull-request workflow, strict `governance`
+status checks, admin enforcement, stale-review dismissal, required
+conversation resolution, and blocked force pushes/deletions. The protection
+requires zero human approvals because CLI-owned work follows the authorized
+automatic approval path after its exact-SHA checks pass.
+
 ## Development principles
 
 - Keep TravelStan a small Django modular monolith with server-rendered pages.
@@ -41,4 +50,3 @@ travelstan-architect
 
 See [`.github/agents/README.md`](.github/agents/README.md) for roles,
 handoffs, evidence binding, and stall handling.
-

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TravelStan demo flight comparison (fictional data)</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'flights/css/app.css' %}">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <h1>TravelStan demo flight comparison</h1>
+    <p class="demo-banner" role="note">
+      Demo mode: every offer below is <strong>fictional</strong>,
+      <strong>non-live</strong>, and <strong>non-bookable</strong>. Source:
+      <code>synthetic_demo</code>. Nothing here can be purchased and no real
+      airline, schedule, or fare is represented.
+    </p>
+  </header>
+
+  <main id="main">
+    <section aria-labelledby="search-heading">
+      <h2 id="search-heading">Search demo flights</h2>
+
+      {% if summary_error %}
+        <div role="alert" tabindex="-1" class="alert" id="error-summary">
+          <h3>We could not run that search</h3>
+          <p>{{ summary_error }}</p>
+          <ul>
+            {% for field in form %}
+              {% if field.errors %}
+                <li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ field.errors.0 }}</a></li>
+              {% endif %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if error_message %}
+        <div role="alert" class="alert">{{ error_message }}</div>
+      {% endif %}
+
+      <form method="post" action="{% url 'flights:search' %}" novalidate>
+        {% csrf_token %}
+
+        <fieldset>
+          <legend>Route</legend>
+          <p class="field">
+            <label for="{{ form.origin.id_for_label }}">{{ form.origin.label }}</label>
+            <input type="text" name="origin" id="{{ form.origin.id_for_label }}"
+                   maxlength="3" autocomplete="off" inputmode="text"
+                   value="{{ form.origin.value|default_if_none:'' }}"
+                   {% if form.origin.errors %}aria-invalid="true" aria-describedby="origin-error"{% endif %}>
+            {% if form.origin.errors %}<span class="field-error" id="origin-error">{{ form.origin.errors.0 }}</span>{% endif %}
+          </p>
+          <p class="field">
+            <label for="{{ form.destination.id_for_label }}">{{ form.destination.label }}</label>
+            <input type="text" name="destination" id="{{ form.destination.id_for_label }}"
+                   maxlength="3" autocomplete="off" inputmode="text"
+                   value="{{ form.destination.value|default_if_none:'' }}"
+                   {% if form.destination.errors %}aria-invalid="true" aria-describedby="destination-error"{% endif %}>
+            {% if form.destination.errors %}<span class="field-error" id="destination-error">{{ form.destination.errors.0 }}</span>{% endif %}
+          </p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Dates</legend>
+          <p class="field">
+            <label for="{{ form.departure_date.id_for_label }}">{{ form.departure_date.label }}</label>
+            <input type="date" name="departure_date" id="{{ form.departure_date.id_for_label }}"
+                   value="{{ form.departure_date.value|default_if_none:'' }}"
+                   {% if form.departure_date.errors %}aria-invalid="true" aria-describedby="departure-error"{% endif %}>
+            {% if form.departure_date.errors %}<span class="field-error" id="departure-error">{{ form.departure_date.errors.0 }}</span>{% endif %}
+          </p>
+          <p class="field">
+            <label for="{{ form.return_date.id_for_label }}">{{ form.return_date.label }}</label>
+            <input type="date" name="return_date" id="{{ form.return_date.id_for_label }}"
+                   value="{{ form.return_date.value|default_if_none:'' }}"
+                   {% if form.return_date.errors %}aria-invalid="true" aria-describedby="return-error"{% endif %}>
+            {% if form.return_date.errors %}<span class="field-error" id="return-error">{{ form.return_date.errors.0 }}</span>{% endif %}
+          </p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Date mode</legend>
+          {% for choice in form.mode %}
+            <span class="choice">{{ choice }}</span>
+          {% endfor %}
+          {% if form.mode.errors %}<span class="field-error">{{ form.mode.errors.0 }}</span>{% endif %}
+          <p class="field">
+            <label for="{{ form.flexibility.id_for_label }}">{{ form.flexibility.label }}</label>
+            <input type="number" name="flexibility" id="{{ form.flexibility.id_for_label }}"
+                   min="1" max="7" step="1"
+                   value="{{ form.flexibility.value|default_if_none:'' }}"
+                   {% if form.flexibility.errors %}aria-invalid="true" aria-describedby="flexibility-error"{% endif %}>
+            {% if form.flexibility.errors %}<span class="field-error" id="flexibility-error">{{ form.flexibility.errors.0 }}</span>{% endif %}
+          </p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Cabin and luggage</legend>
+          <p class="field">
+            <label for="{{ form.cabin.id_for_label }}">{{ form.cabin.label }}</label>
+            <select name="cabin" id="{{ form.cabin.id_for_label }}">
+              {% for value, label in form.fields.cabin.choices %}
+                <option value="{{ value }}" {% if form.cabin.value == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if form.cabin.errors %}<span class="field-error">{{ form.cabin.errors.0 }}</span>{% endif %}
+          </p>
+          <fieldset class="inner-fieldset">
+            <legend>{{ form.luggage.label }} (choose one)</legend>
+            {% for choice in form.luggage %}
+              <span class="choice">{{ choice }}</span>
+            {% endfor %}
+            {% if form.luggage.errors %}<span class="field-error">{{ form.luggage.errors.0 }}</span>{% endif %}
+          </fieldset>
+        </fieldset>
+
+        <fieldset>
+          <legend>Passengers</legend>
+          <p class="fixed-passengers">1 adult (fixed for this demo)</p>
+        </fieldset>
+
+        <button type="submit">Show demo offers</button>
+      </form>
+    </section>
+
+    {% if searched %}
+      <section aria-labelledby="results-heading">
+        <h2 id="results-heading">Demo results</h2>
+        <p role="status" class="status">
+          {% if offers %}
+            Showing {{ offers|length }} fictional demo offer{{ offers|length|pluralize }}
+            for {{ query.origin }} to {{ query.destination }}
+            {% if query.is_one_way %}(one-way){% else %}(return){% endif %}.
+          {% elif error_message %}
+            {{ error_message }}
+          {% else %}
+            No demo offers match this search.
+          {% endif %}
+        </p>
+        <p class="disclaimer">
+          Prices are fictional demo values, not live fares, not quotes, and not
+          bookable. TravelStan does not sell tickets, take payment, or link to
+          sellers.
+        </p>
+
+        {% if offers %}
+        <table>
+          <caption>
+            Fictional demo offers (source <code>synthetic_demo</code>), sorted by
+            total price, then currency, duration, and offer ID. Maximum ten rows.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Carrier</th>
+              <th scope="col">Route and schedule</th>
+              <th scope="col">Duration and stops</th>
+              <th scope="col">Cabin and fare</th>
+              <th scope="col">Baggage</th>
+              <th scope="col">Price</th>
+              <th scope="col">Source and freshness</th>
+              <th scope="col">Seller and purchase</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for offer in offers %}
+              <tr>
+                <th scope="row" data-label="Carrier">
+                  {% for segment in offer.outbound.segments %}
+                    <span class="carrier">{{ segment.marketing_carrier_name }} ({{ segment.marketing_carrier }}) {{ segment.flight_number }}</span>
+                    {% if segment.operated_by_other %}
+                      <span class="operated-by">Operated by {{ segment.operating_carrier_name }} ({{ segment.operating_carrier }})</span>
+                    {% endif %}
+                  {% endfor %}
+                </th>
+                <td data-label="Route and schedule">
+                  <span class="leg-title">Outbound</span>
+                  {% for segment in offer.outbound.segments %}
+                    <span class="leg">{{ segment.origin }} {{ segment.departure|date:"Y-m-d H:i" }} &rarr; {{ segment.destination }} {{ segment.arrival|date:"Y-m-d H:i" }} UTC</span>
+                  {% endfor %}
+                  {% if offer.inbound %}
+                    <span class="leg-title">Return</span>
+                    {% for segment in offer.inbound.segments %}
+                      <span class="leg">{{ segment.origin }} {{ segment.departure|date:"Y-m-d H:i" }} &rarr; {{ segment.destination }} {{ segment.arrival|date:"Y-m-d H:i" }} UTC</span>
+                    {% endfor %}
+                  {% else %}
+                    <span class="leg">One-way</span>
+                  {% endif %}
+                </td>
+                <td data-label="Duration and stops">
+                  <span>Outbound {{ offer.outbound.duration_minutes }} min, {{ offer.outbound.stops }} stop{{ offer.outbound.stops|pluralize }}</span>
+                  {% if offer.inbound %}
+                    <span>Return {{ offer.inbound.duration_minutes }} min, {{ offer.inbound.stops }} stop{{ offer.inbound.stops|pluralize }}</span>
+                  {% endif %}
+                  <span>Combined {{ offer.combined_duration_minutes }} min</span>
+                </td>
+                <td data-label="Cabin and fare">
+                  <span>{{ offer.cabin }}</span>
+                  <span>{{ offer.fare_brand }}</span>
+                </td>
+                <td data-label="Baggage">
+                  <ul class="baggage">
+                    {% for allowance in offer.baggage.as_rows %}
+                      <li>{{ allowance.slot_label }}: {{ allowance.state_label }}{% if allowance.price_label %} &mdash; {{ allowance.price_label }}{% endif %}</li>
+                    {% endfor %}
+                  </ul>
+                </td>
+                <td data-label="Price">
+                  <span class="price">{{ offer.total_amount }} {{ offer.currency }}</span>
+                  <span class="price-note">Fictional demo price</span>
+                </td>
+                <td data-label="Source and freshness">
+                  <span>Source: {{ offer.source }}</span>
+                  <span>Retrieved: {{ offer.retrieved_at|date:"Y-m-d H:i" }} UTC</span>
+                  <span>Valid until: {{ offer.expires_at|date:"Y-m-d H:i" }} UTC</span>
+                </td>
+                <td data-label="Seller and purchase">
+                  <span>No seller</span>
+                  <span>Non-bookable demo offer</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+      </section>
+    {% endif %}
+  </main>
+
+  <footer>
+    <p>
+      TravelStan demo build. Fictional, non-live, non-bookable data from the
+      <code>synthetic_demo</code> source. No searches, results, or personal data
+      are stored.
+    </p>
+  </footer>
+</body>
+</html>
