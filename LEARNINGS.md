@@ -16,3 +16,17 @@ data, credentials, source code, or domain rules from other projects.
 - SerpApi's `bags` parameter is carry-on-only; documented checked-bag values
   are free text and must remain unknown rather than drive the checked-required
   filter.
+- Provider cost must be calculated from actual upstream calls, not submitted
+  forms. Round-trip leg selection, flexible-date expansion, and per-offer
+  booking enrichment can turn 20 user searches into hundreds of provider
+  requests.
+- A paid ancillary is not included in the quoted fare merely because it is
+  available. `extra_paid_bag` must preserve fare inclusion separately from an
+  exact binding ancillary price.
+- Offer equivalence includes binding ancillary amount, currency, and scope.
+  Sort deterministically before first-wins deduplication so provider response
+  order cannot select a different representative.
+- The provider boundary must retain supplied baggage weight and unit. Missing
+  weight remains unknown; it is never reconstructed from cabin or fare brand.
+- Private use reduces exposure and traffic but is not evidence of permission,
+  licensing, seller identity, or provider-field completeness.
