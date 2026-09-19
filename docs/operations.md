@@ -7,8 +7,9 @@ results.
 
 ## Repository controls
 
-On 2026-09-19 GitHub returned HTTP 403 when applying protected branch rules to
-this private repository: the current account requires GitHub Pro for that
-feature. The repository remains private; the orchestrator must follow the
-documented PR flow manually until an authorized account capability change
-allows server-enforced `master` and `dev` protections.
+TravelStan was made public as authorized on 2026-09-19, which enabled GitHub
+branch protection under the current account. `master` and `dev` require the
+strict exact-SHA `governance` status check, enforce protections for admins,
+require resolved conversations, dismiss stale reviews, and block force pushes
+and deletions. The configured approval count is zero because CLI-owned work
+uses the authorized automatic path once technical checks pass.
