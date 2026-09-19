@@ -27,3 +27,42 @@ jobs:
           test -f .github/pull_request_template.md
           test -f .github/agents/README.md
 
+
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DJANGO_DEBUG: "0"
+      DJANGO_SECRET_KEY: ci-synthetic-demo-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: Verify no live-provider or network code paths
+        run: |
+          fail=0
+          check() {
+            if grep -RInE "$1" --include="*.py" --include="*.html" \
+                 --exclude-dir=tests config flights; then
+              echo "Forbidden pattern found: $1"
+              fail=1
+            fi
+          }
+          check "requests\\.get|urllib\\.request|http\\.client|httpx|aiohttp"
+          check "socket\\.create_connection|socket\\.socket"
+          check "https?://"
+          check "API_KEY|CLIENT_SECRET|ACCESS_TOKEN|PROVIDER_TOKEN"
+          exit "$fail"
+      - name: Format check
+        run: ruff format --check .
+      - name: Lint
+        run: ruff check .
+      - name: Django checks
+        run: python manage.py check --fail-level WARNING
+      - name: Tests
+        run: python manage.py test --verbosity 2
