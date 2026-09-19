@@ -6,11 +6,11 @@ tickets, service bookings, or guarantee fares.
 
 ## Status
 
-The initial implementation is in progress. The application will run without
-external credentials using a visibly labelled deterministic `synthetic_demo`
-provider. Live fare search remains disabled until a provider passes the
-documented first-party research, terms, privacy, baggage, and
-airline-direct-link gates.
+The initial implementation is in progress. It will run without external
+credentials using a visibly labelled deterministic `synthetic_demo` provider.
+Live fare search is disabled: the completed first-party provider research found
+no `GO` provider for the required custom table and proven airline-direct links.
+See [provider research](docs/provider-research.md).
 
 ## Development
 
@@ -21,4 +21,3 @@ instructions will be added with the first runnable slice.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the protected branch workflow and
 [docs/architecture.md](docs/architecture.md) for the provider boundary once
 the architecture gate is complete.
-
