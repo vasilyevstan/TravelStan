@@ -37,6 +37,15 @@ def _post_payload() -> dict[str, str]:
 
 
 class ResponsiveCssTests(TestCase):
+    def test_default_theme_is_dark(self) -> None:
+        css = CSS_PATH.read_text(encoding="utf-8")
+        self.assertIn("color-scheme: dark", css)
+        self.assertIn("--bg: #080d18", css)
+        self.assertIn("--ink: #e7edf7", css)
+        self.assertIn("--focus: #fbbf24", css)
+        content = self.client.get(reverse("flights:search")).content.decode()
+        self.assertIn('<meta name="theme-color" content="#080d18">', content)
+
     def test_css_is_mobile_first_with_stacked_cards(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")
         self.assertIn("@media", css)

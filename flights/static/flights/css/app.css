@@ -1,11 +1,19 @@
 :root {
-  --ink: #16202c;
-  --muted: #4a5666;
-  --line: #c9d2dd;
-  --accent: #0b4f8a;
-  --warn-bg: #fff4d6;
-  --alert-bg: #fdecea;
-  --bg: #f7f9fc;
+  color-scheme: dark;
+  --ink: #e7edf7;
+  --muted: #aebbd0;
+  --line: #3b4a61;
+  --accent: #7dd3fc;
+  --button: #0ea5e9;
+  --button-ink: #07131f;
+  --focus: #fbbf24;
+  --warn-bg: #302812;
+  --warn-line: #d6a93a;
+  --alert-bg: #3b1d25;
+  --alert-line: #f87171;
+  --surface: #111827;
+  --surface-raised: #172033;
+  --bg: #080d18;
 }
 
 * { box-sizing: border-box; }
@@ -30,13 +38,14 @@ main, .site-header, footer { max-width: 70rem; margin: 0 auto; }
   position: static;
   display: inline-block;
   padding: 0.5rem;
-  background: #fff;
+  color: var(--ink);
+  background: var(--surface);
 }
 
 a { color: var(--accent); }
 
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -45,14 +54,14 @@ h2 { font-size: 1.25rem; }
 
 .demo-banner {
   background: var(--warn-bg);
-  border: 2px solid #b8860b;
+  border: 2px solid var(--warn-line);
   padding: 0.75rem;
   border-radius: 6px;
 }
 
 .alert {
   background: var(--alert-bg);
-  border: 2px solid #a32b20;
+  border: 2px solid var(--alert-line);
   padding: 0.75rem;
   border-radius: 6px;
 }
@@ -62,7 +71,7 @@ h2 { font-size: 1.25rem; }
 .disclaimer, .price-note, .operated-by { color: var(--muted); font-size: 0.9rem; }
 
 form {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 1rem;
@@ -89,14 +98,19 @@ input, select, button {
   min-height: 2.75rem;
 }
 
+input, select {
+  color: var(--ink);
+  background: var(--bg);
+}
+
 .choice { display: block; margin-bottom: 0.25rem; }
 .choice label { font-weight: 400; }
 
-.field-error { color: #a32b20; font-weight: 600; }
+.field-error { color: #fca5a5; font-weight: 600; }
 
 button {
-  background: var(--accent);
-  color: #fff;
+  background: var(--button);
+  color: var(--button-ink);
   border: none;
   cursor: pointer;
   width: 100%;
@@ -105,7 +119,7 @@ button {
 table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
 }
 
@@ -123,7 +137,7 @@ th, td {
   vertical-align: top;
 }
 
-thead th { background: #eef3f9; }
+thead th { background: var(--surface-raised); }
 
 td span, th span { display: block; }
 
@@ -146,7 +160,7 @@ td span, th span { display: block; }
     border: 1px solid var(--line);
     border-radius: 8px;
     margin-bottom: 1rem;
-    background: #fff;
+    background: var(--surface);
     padding: 0.25rem;
   }
 
