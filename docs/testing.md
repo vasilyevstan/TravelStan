@@ -27,3 +27,19 @@ real provider calls or require provider credentials.
 Time is injected (`flights/clock.py`, `SearchForm(today=...)`,
 `views.search(today_provider=..., now_provider=...)`), so no test depends on
 the wall clock.
+
+## Review-driven regression work
+
+Before accepting live baggage or ancillary data, add regression tests proving:
+
+- a separately paid extra bag is not labelled as included in the displayed
+  fare;
+- baggage weight and unit survive normalized provider mapping;
+- binding ancillary amount, currency, and scope participate in offer identity;
+- offers are sorted before first-wins deduplication; and
+- user-facing cabin wording remains `Economy+ / Premium Economy` while the
+  normalized value remains `premium_economy`.
+
+Provider-adapter tests must also count actual upstream calls for return-leg
+selection, flexible-date expansion, and per-offer enrichment. Submitted form
+count is not a valid quota proxy.
