@@ -17,12 +17,12 @@ agent-chain results.
 
 ## Current branch-protection status
 
-TravelStan remains private. GitHub rejected the requested `master` and `dev`
-branch-protection configuration on 2026-09-19 with HTTP 403: private-repository
-branch protection requires GitHub Pro or a public repository for this account.
-The team will continue to use the documented pull-request-only workflow, but
-this is an explicit operational blocker—not a claim that server-enforced
-protection is active. Do not make the repository public to work around it.
+TravelStan is public as authorized on 2026-09-19. Both `master` and `dev` have
+verified GitHub branch protection: pull-request workflow, strict `governance`
+status checks, admin enforcement, stale-review dismissal, required
+conversation resolution, and blocked force pushes/deletions. The protection
+requires zero human approvals because CLI-owned work follows the authorized
+automatic approval path after its exact-SHA checks pass.
 
 ## Development principles
 
