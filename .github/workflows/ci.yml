@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+    branches: [dev, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify required governance files
+        run: |
+          test -f README.md
+          test -f CONTRIBUTING.md
+          test -f LEARNINGS.md
+          test -f .github/pull_request_template.md
+          test -f .github/agents/README.md
+
