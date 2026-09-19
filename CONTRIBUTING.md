@@ -15,6 +15,15 @@ authority. Pull requests require exact base/head revisions, focused validation
 evidence, provider/privacy impact, risks and rollback, and the applicable
 agent-chain results.
 
+## Current branch-protection status
+
+TravelStan remains private. GitHub rejected the requested `master` and `dev`
+branch-protection configuration on 2026-09-19 with HTTP 403: private-repository
+branch protection requires GitHub Pro or a public repository for this account.
+The team will continue to use the documented pull-request-only workflow, but
+this is an explicit operational blocker—not a claim that server-enforced
+protection is active. Do not make the repository public to work around it.
+
 ## Development principles
 
 - Keep TravelStan a small Django modular monolith with server-rendered pages.
@@ -41,4 +50,3 @@ travelstan-architect
 
 See [`.github/agents/README.md`](.github/agents/README.md) for roles,
 handoffs, evidence binding, and stall handling.
-
