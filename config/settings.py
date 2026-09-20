@@ -1,8 +1,4 @@
-"""Settings for the synthetic-demo TravelStan slice.
-
-The slice is deterministic, in-process, and credential-free. No provider
-credentials, registry hooks, or network settings exist here.
-"""
+"""Settings for the local TravelStan application."""
 
 import os
 from pathlib import Path
@@ -80,4 +76,18 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": "WARNING"},
 }
 
-TRAVELSTAN_PROVIDER_MODE = "synthetic_demo"
+
+def _csv_setting(name: str, default: str) -> tuple[str, ...]:
+    return tuple(
+        item.strip().lower()
+        for item in os.environ.get(name, default).split(",")
+        if item.strip()
+    )
+
+
+TRAVELSTAN_PROVIDERS = _csv_setting("TRAVELSTAN_PROVIDERS", "synthetic_demo")
+TRAVELSTAN_COUNTRY = os.environ.get("TRAVELSTAN_COUNTRY", "EE")
+TRAVELSTAN_LOCALE = os.environ.get("TRAVELSTAN_LOCALE", "en-EE")
+SERPAPI_API_KEY = os.environ.get("SERPAPI_API_KEY", "")
+SERPAPI_CURRENCY = os.environ.get("SERPAPI_CURRENCY", "EUR")
+SERPAPI_API_URL = os.environ.get("SERPAPI_API_URL", "https://serpapi.com/search.json")

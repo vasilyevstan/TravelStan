@@ -1,47 +1,82 @@
 # TravelStan
 
-TravelStan is a lightweight, server-rendered application for comparing
-airline-ticket alternatives. It does not sell tickets, accept payments, issue
-tickets, service bookings, or guarantee fares.
+TravelStan is a small, server-rendered Django application for comparing flight
+offers. It does not sell tickets, take payment, issue tickets, or service a
+booking.
 
-## Status
+## Current status
 
-The first runnable slice is implemented: a single Django `flights` app with a
-server-rendered search form and result table. It runs without any external
-credential or network access and uses a visibly labelled deterministic
-`synthetic_demo` provider whose offers are fictional, non-live, and
-non-bookable. Live fare search is disabled: the completed first-party provider
-research found no `GO` provider for the required custom table and proven
-airline-direct links. See [provider research](docs/provider-research.md).
+The default configuration uses deterministic fictional data and performs no
+network requests. A constrained personal-use adapter for SerpApi Google
+Flights can be selected explicitly with a server-side API key.
+
+SerpApi is an **experimental scraping intermediary**, not an airline or
+licensed Google Flights partner API. It is included because direct-airline
+APIs expose carrier-specific slices rather than the broad comparison coverage
+TravelStan needs. Air France–KLM, Singapore, and TUI prototype adapters remain
+in the source tree for fixture research but are not runtime-selectable.
 
 ## Development
 
-Stack: Python 3.13, Django 5.2, SQLite (unused by search), server-rendered
-templates, vanilla CSS, no JavaScript required.
-
-### Local commands
+Requirements: Python 3.13, Django 5.2, and `httpx`. Search uses server-rendered
+templates and vanilla CSS; JavaScript is not required. SQLite is configured by
+Django but search does not read or write it.
 
 ```bash
-# create the environment (uv)
-uv venv --python 3.13 .venv
-uv pip install -r requirements-dev.txt
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
 
-# or with plain pip
-python3.13 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
-
-# checks
 .venv/bin/ruff format --check .
 .venv/bin/ruff check .
 .venv/bin/python manage.py check
 .venv/bin/python manage.py test
-
-# run the demo locally at http://127.0.0.1:8000/
 .venv/bin/python manage.py runserver
 ```
 
-No migrations, database records, caches, or sessions are used by the search
-slice, and no provider credential or environment variable enables live data.
+## Provider configuration
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the protected branch workflow,
-[docs/architecture.md](docs/architecture.md) for the accepted contract, and
-[docs/testing.md](docs/testing.md) for the test layout.
+`TRAVELSTAN_PROVIDERS` is a comma-separated list. Synthetic results cannot be
+mixed with external results.
+
+```bash
+# Credential-free default
+export TRAVELSTAN_PROVIDERS=synthetic_demo
+
+# Experimental broad comparison
+export TRAVELSTAN_PROVIDERS=serpapi
+export SERPAPI_API_KEY='...'
+```
+
+See [`.env.example`](.env.example) for all non-secret settings. TravelStan does
+not load `.env` files itself; export variables through the shell or process
+manager. `manage.py check` rejects unknown providers, a missing SerpApi key, and mixed
+synthetic/external configuration.
+
+The SerpApi experiment:
+
+- supports Economy, Economy+ / Premium Economy, and Business;
+- supports exact dates and at most a `±1` joint date window;
+- makes at most six upstream requests per submitted search;
+- sends `no_cache=true` for fresh retrieval;
+- does not request booking options or render purchase links;
+- keeps all baggage categories `unknown`; and
+- refuses checked-bag-required and All classes searches without making a
+  provider request.
+
+Synthetic data is never used as fallback after a SerpApi failure.
+
+## Privacy and booking links
+
+Routes, dates, cabin, passenger count, market, and currency are sent to
+SerpApi, which uses them to scrape Google Flights. SerpApi documents ordinary
+search archive access for up to 31 days; its free plan does not include
+ZeroTrace. TravelStan stores no queries, responses, IP addresses, or results
+in its own database, cache, session, or application logs.
+
+No booking link is rendered by this experiment. Missing baggage fields remain
+`unknown`; SerpApi's `bags` parameter means carry-on and is not used as proof
+that checked baggage is included.
+
+See [provider research](docs/provider-research.md),
+[architecture](docs/architecture.md), and [operations](docs/operations.md) for
+the evidence, boundaries, and activation procedure.

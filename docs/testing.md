@@ -1,7 +1,7 @@
 # Testing
 
-Tests and CI use deterministic synthetic fixtures only. They must not make
-real provider calls or require provider credentials.
+Tests and CI use deterministic synthetic and provider-response fixtures. They
+must not make real provider calls or require provider credentials.
 
 ## Commands
 
@@ -19,18 +19,20 @@ real provider calls or require provider credentials.
 | --- | --- |
 | `flights/tests/test_forms.py` | Distinct upper-case IATA codes, strictly future departure via the injected current date, blank return normalizing to one-way `None`, strictly later return, exact/flexible modes, flexibility `1..7`, the four cabin choices, the required explicit checked-luggage choice, single adult, and generic redacted messages. |
 | `flights/tests/test_planner.py` | Exact offset `[0]`, canonical flexible `[0, -1, +1, ...]`, the 15-option pre-filter cap, joint departure/return shifting, one-way preservation, removal of shifts on or before the current date, and no Cartesian product or backfill. |
-| `flights/tests/test_results.py` | Four-slot baggage with explicit state and no inference, checked-required filtering to known positive included allowances, first-wins full-itinerary dedupe, amount/currency/combined-duration/offer-ID sorting, and the ten-row cap. |
-| `flights/tests/test_provider.py` | Normalized provider protocol, fictional offers with no seller/URL/bookable action, binding-only extra-bag prices, cabin filtering with `all_classes` as no filter, determinism, and no-network operation (sockets blocked plus a source scan for HTTP clients). |
-| `flights/tests/test_views.py` | POST/CSRF flow, demo labelling, price disclaimer, `synthetic_demo` source, frozen table columns with retrieval/expiry, absent purchase links or CTAs, redacted form and provider failures, accessible semantics, no-JavaScript rendering, and no persistence/session/cache/log capture. |
-| `flights/tests/test_presentation.py` | Responsive stacked-card CSS for narrow screens, viewport metadata, service-level result assembly, and zero database queries per search. |
+| `flights/tests/test_results.py` | Four-slot baggage, checked-required filtering, ancillary/weight identity, sort-before-dedupe, and the ten-card cap. |
+| `flights/tests/test_provider.py` | Synthetic determinism, no-network operation, SerpApi registry configuration, key requirements, synthetic/external separation, and rejection of unverified direct adapters. |
+| `flights/tests/test_provider_adapters.py` | Offline prototype fixtures for AF–KLM, Singapore, and TUI. Passing fixtures do not establish compatibility with current official schemas. |
+| `flights/tests/test_serpapi.py` | Mocked exact and `±1` SerpApi flows, dynamic request counts, six-request cap, unknown baggage, omitted booking links, unsupported-query fail-closed behavior, and secret-safe errors. |
+| `flights/tests/test_views.py` | POST/CSRF flow, honest source labelling, accessible offer cards, redacted failures, no-JavaScript rendering, and no persistence/session/cache/log capture. |
+| `flights/tests/test_presentation.py` | Dark responsive card CSS, viewport metadata, service-level result assembly, and zero database queries per search. |
 
 Time is injected (`flights/clock.py`, `SearchForm(today=...)`,
 `views.search(today_provider=..., now_provider=...)`), so no test depends on
 the wall clock.
 
-## Review-driven regression work
+## Provider regression rules
 
-Before accepting live baggage or ancillary data, add regression tests proving:
+Regression tests prove:
 
 - a separately paid extra bag is not labelled as included in the displayed
   fare;
@@ -40,6 +42,8 @@ Before accepting live baggage or ancillary data, add regression tests proving:
 - user-facing cabin wording remains `Economy+ / Premium Economy` while the
   normalized value remains `premium_economy`.
 
-Provider-adapter tests must also count actual upstream calls for return-leg
-selection, flexible-date expansion, and per-offer enrichment. Submitted form
-count is not a valid quota proxy.
+Provider-adapter tests count actual upstream calls for return-leg selection and
+flexible-date handling. Submitted form count is not a valid quota proxy.
+
+SerpApi CI tests use `httpx.MockTransport`; no API key or live Google Flights
+request is permitted.

@@ -1,5 +1,13 @@
 # Released application review
 
+## Resolution
+
+All five findings were corrected on 2026-09-20 as part of the provider and UI
+slice: paid extra bags are separate from fare inclusion, baggage retains
+weight/unit, ancillary details participate in identity, sorting precedes
+first-wins deduplication, and the cabin label is now “Economy+ / Premium
+Economy.” The original review below is retained as the release record.
+
 **Reviewed:** 2026-09-19  
 **Release:** `2f9826c6286aba7102eab0c93745f272bb34cd61`
 
@@ -79,4 +87,3 @@ release. Findings 1 and 5 affect current presentation and should be corrected
 in a focused regression-tested slice. Findings 2–4 are provider-boundary
 correctness gaps that must be resolved before accepting live baggage or
 ancillary data.
-

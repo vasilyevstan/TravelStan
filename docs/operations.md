@@ -1,33 +1,66 @@
 # Operations
 
-`synthetic_demo` is the default credential-free mode. Live mode is disabled
-until a documented provider `GO` decision and valid environment configuration
-exist. A live failure must be explicit and must never fall back to synthetic
-results.
+## Offline default
 
-## Running the demo
-
-The application needs no credential, environment variable, or network egress.
-`DJANGO_SECRET_KEY` and `DJANGO_DEBUG` are the only optional overrides, and no
-setting enables a live provider.
+No provider credential or network is required for the default mode:
 
 ```bash
-uv venv --python 3.13 .venv
-uv pip install -r requirements-dev.txt
+export TRAVELSTAN_PROVIDERS=synthetic_demo
 .venv/bin/python manage.py check
-.venv/bin/python manage.py test
 .venv/bin/python manage.py runserver
 ```
 
-The search path performs no database writes or reads, uses a dummy cache, has
-no session or authentication middleware, and never logs query values, results,
-or IP addresses.
+The search path performs no database or cache writes and uses no session or
+authentication middleware.
 
-## Repository controls
+## Experimental SerpApi provider
 
-TravelStan was made public as authorized on 2026-09-19, which enabled GitHub
-branch protection under the current account. `master` and `dev` require the
-strict exact-SHA `governance` status check, enforce protections for admins,
-require resolved conversations, dismiss stale reviews, and block force pushes
-and deletions. The configured approval count is zero because CLI-owned work
-uses the authorized automatic path once technical checks pass.
+Create a SerpApi account separately, then export its key only in the server
+process. Never put a populated key in the repository, browser, screenshots, or
+chat.
+
+```bash
+export TRAVELSTAN_PROVIDERS=serpapi
+export SERPAPI_API_KEY='...'
+export SERPAPI_CURRENCY=EUR
+.venv/bin/python manage.py check --fail-level WARNING
+```
+
+`TRAVELSTAN_COUNTRY=EE` and `TRAVELSTAN_LOCALE=en-EE` set the Google market
+and language. SerpApi authentication requires its key as an upstream query
+parameter; TravelStan never renders or logs the provider URL and removes HTTP
+exception causes that could retain it.
+
+## Failure and quota behavior
+
+- One search makes zero upstream calls in synthetic mode.
+- SerpApi exact one-way uses one request; exact round-trip uses at most four.
+- Flexible mode is limited to `±1`; a round-trip uses at most six requests.
+- All classes, checked-bag-required, and wider flexible searches make zero
+  requests and return an explicit limitation notice.
+- Calls use the shared timeout and no retry. Total failure produces one
+  redacted error and never synthetic data.
+- `no_cache=true` is sent for freshness, so successful calls count toward the
+  plan. Twenty maximum-budget searches use at most 120 calls, below the
+  current free allowance of 250.
+- No persistent quota ledger exists. Disable SerpApi automatic early renewal
+  and monitor its dashboard before increasing search scope.
+
+HTTP 401/403 means the key or account is unusable. HTTP 429 means the provider
+quota is exhausted. Neither condition is retried automatically.
+
+## Credential validation checklist
+
+Before relying on the experiment:
+
+1. Run `manage.py check` with only `serpapi` selected.
+2. Disable automatic early renewal in the SerpApi account.
+3. Submit one exact one-way search and one exact round-trip search.
+4. Confirm dates, itinerary, requested currency, and passenger scope against
+   Google Flights or the eventual seller page.
+5. Confirm the account dashboard counted no more than five calls for those two
+   searches.
+6. Verify that no API key, request URL, or raw provider payload appears in the
+   rendered page or application logs.
+
+Disable a provider immediately by removing it from `TRAVELSTAN_PROVIDERS`.

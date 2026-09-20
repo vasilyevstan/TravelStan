@@ -1,9 +1,9 @@
 [project]
 name = "travelstan"
 version = "0.1.0"
-description = "Server-rendered synthetic-demo flight comparison slice"
+description = "Server-rendered personal flight comparison"
 requires-python = ">=3.13"
-dependencies = ["Django>=5.2,<5.3"]
+dependencies = ["Django>=5.2,<5.3", "httpx>=0.28,<0.29"]
 
 [dependency-groups]
 dev = ["ruff>=0.6"]
