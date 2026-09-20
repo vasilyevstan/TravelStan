@@ -231,7 +231,7 @@ class SerpApiProvider:
         query: SearchQuery,
         now: dt.datetime,
     ) -> Offer | None:
-        outbound = self._map_itinerary(raw)
+        outbound = self._map_itinerary(raw, query.origin, query.destination)
         return self._offer(raw, outbound, None, query, now)
 
     def _map_round_trip(
@@ -241,8 +241,16 @@ class SerpApiProvider:
         query: SearchQuery,
         now: dt.datetime,
     ) -> Offer | None:
-        outbound = self._map_itinerary(raw_outbound)
-        inbound = self._map_itinerary(raw_inbound)
+        outbound = self._map_itinerary(
+            raw_outbound,
+            query.origin,
+            query.destination,
+        )
+        inbound = self._map_itinerary(
+            raw_inbound,
+            query.destination,
+            query.origin,
+        )
         return self._offer(raw_inbound, outbound, inbound, query, now)
 
     def _offer(
@@ -285,9 +293,17 @@ class SerpApiProvider:
             is_fictional=False,
         )
 
-    def _map_itinerary(self, raw: Mapping[str, Any]) -> Itinerary | None:
+    def _map_itinerary(
+        self,
+        raw: Mapping[str, Any],
+        expected_origin: str,
+        expected_destination: str,
+    ) -> Itinerary | None:
+        raw_flights = as_list(raw.get("flights"))
+        if not raw_flights:
+            return None
         segments: list[Segment] = []
-        for raw_flight in as_list(raw.get("flights")):
+        for raw_flight in raw_flights:
             flight = as_mapping(raw_flight)
             departure = as_mapping(flight.get("departure_airport"))
             arrival = as_mapping(flight.get("arrival_airport"))
@@ -309,7 +325,7 @@ class SerpApiProvider:
                     airline,
                 )
             ):
-                continue
+                return None
             duration = int_value(flight.get("duration")) or minutes_between(
                 departure_time, arrival_time
             )
@@ -328,7 +344,14 @@ class SerpApiProvider:
                     duration_minutes=duration,
                 )
             )
-        if not segments:
+        if (
+            segments[0].origin != expected_origin
+            or segments[-1].destination != expected_destination
+            or any(
+                current.destination != following.origin
+                for current, following in zip(segments, segments[1:], strict=False)
+            )
+        ):
             return None
         return Itinerary(
             tuple(segments),

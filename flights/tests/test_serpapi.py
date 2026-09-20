@@ -111,6 +111,69 @@ class SerpApiProviderTests(SimpleTestCase):
         self.assertEqual(offer.baggage.checked_bag.state, BaggageState.UNKNOWN)
         self.assertEqual(offer.expires_at, NOW)
 
+    def test_rejects_partial_disconnected_and_wrong_route_itineraries(self) -> None:
+        valid_first = _flight(
+            origin="AAA",
+            destination="XXX",
+            departure="2026-10-01 08:00",
+            arrival="2026-10-01 09:00",
+            number="EA 101",
+        )
+        malformed_second = _flight(
+            origin="XXX",
+            destination="BBB",
+            departure="2026-10-01 10:00",
+            arrival="2026-10-01 11:00",
+            number="EA 102",
+        )
+        malformed_second.pop("airline")
+        invalid_flights = (
+            [valid_first, malformed_second],
+            [
+                valid_first,
+                _flight(
+                    origin="YYY",
+                    destination="BBB",
+                    departure="2026-10-01 10:00",
+                    arrival="2026-10-01 11:00",
+                    number="EA 102",
+                ),
+            ],
+            [valid_first],
+        )
+
+        for flights in invalid_flights:
+            with self.subTest(flights=flights):
+
+                def handler(
+                    request: httpx.Request,
+                    flights: list[dict[str, object]] = flights,
+                ) -> httpx.Response:
+                    return httpx.Response(
+                        200,
+                        json={
+                            "best_flights": [
+                                {
+                                    "flights": flights,
+                                    "total_duration": 180,
+                                    "price": 120,
+                                }
+                            ]
+                        },
+                    )
+
+                provider = SerpApiProvider(
+                    "key",
+                    transport=httpx.MockTransport(handler),
+                )
+                query = make_query(cabin=CabinClass.ECONOMY)
+                result = provider.search(
+                    query,
+                    plan_date_options(query, TODAY),
+                    NOW,
+                )
+                self.assertFalse(result.offers)
+
     def test_exact_round_trip_follows_three_bounded_outbound_branches(self) -> None:
         requests: list[httpx.Request] = []
 

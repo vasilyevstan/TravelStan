@@ -124,6 +124,10 @@ class ViewTests(TestCase):
         self.assertIn("Experimental live-source comparison", content)
         self.assertIn("scrapes Google Flights", content)
         self.assertIn("retain ordinary searches for up to 31 days", content)
+        self.assertIn(
+            "Checked-bag filtering and booking links are unavailable",
+            content,
+        )
         self.assertNotIn("do-not-render", content)
 
     def test_results_capped_at_ten_rows(self) -> None:
