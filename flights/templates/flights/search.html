@@ -187,7 +187,7 @@
                   <header class="offer-header">
                     <div>
                       <span class="data-badge data-badge--{{ offer.data_status }}">{% if offer.source == "synthetic_demo" %}Sample{% else %}{{ offer.status_label }}{% endif %}</span>
-                      <strong class="source-name">{% if offer.source == "synthetic_demo" %}Generated itinerary{% else %}{{ offer.seller_name|default:offer.source }}{% endif %}</strong>
+                      <strong class="source-name">{% if offer.source == "synthetic_demo" %}Generated itinerary{% elif offer.source == "serpapi" %}SerpApi / Google Flights{% else %}{{ offer.seller_name|default:offer.source }}{% endif %}</strong>
                     </div>
                     <span class="fare-label">{{ offer.cabin_label }} · {{ offer.fare_brand }}</span>
                   </header>
@@ -292,7 +292,7 @@
 
   <footer class="site-footer">
     <p>TravelStan compares offers but does not sell tickets or take payment. Experimental SerpApi results must be confirmed on the seller's page.</p>
-    <p>No searches or results are stored.</p>
+    <p>TravelStan does not store searches or results. SerpApi's disclosed retention may still apply.</p>
   </footer>
 </body>
 </html>

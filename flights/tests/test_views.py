@@ -128,6 +128,8 @@ class ViewTests(TestCase):
             "Checked-bag filtering and booking links are unavailable",
             content,
         )
+        self.assertIn("TravelStan does not store searches or results", content)
+        self.assertIn("SerpApi's disclosed retention may still apply", content)
         self.assertNotIn("do-not-render", content)
 
     def test_results_capped_at_ten_rows(self) -> None:

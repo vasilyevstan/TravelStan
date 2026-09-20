@@ -262,7 +262,11 @@ class SerpApiProvider:
         now: dt.datetime,
     ) -> Offer | None:
         price = decimal_value(raw.get("price"))
-        if outbound is None or price is None:
+        if (
+            outbound is None
+            or (not query.is_one_way and inbound is None)
+            or price is None
+        ):
             return None
         first_flight = as_mapping(first_value(raw, "flights.0"))
         travel_class = first_value(first_flight, "travel_class")
@@ -287,7 +291,7 @@ class SerpApiProvider:
             retrieved_at=now,
             expires_at=now,
             data_status=self.data_status,
-            seller_name=self.display_name,
+            seller_name=None,
             purchase_url=None,
             is_bookable=False,
             is_fictional=False,

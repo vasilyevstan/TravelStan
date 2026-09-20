@@ -78,6 +78,41 @@ def _option(
     return result
 
 
+def _invalid_itineraries(
+    origin: str = "AAA",
+    destination: str = "BBB",
+) -> tuple[list[dict[str, object]], ...]:
+    valid_first = _flight(
+        origin=origin,
+        destination="XXX",
+        departure="2026-10-01 08:00",
+        arrival="2026-10-01 09:00",
+        number="EA 101",
+    )
+    malformed_second = _flight(
+        origin="XXX",
+        destination=destination,
+        departure="2026-10-01 10:00",
+        arrival="2026-10-01 11:00",
+        number="EA 102",
+    )
+    malformed_second.pop("airline")
+    return (
+        [valid_first, malformed_second],
+        [
+            valid_first,
+            _flight(
+                origin="YYY",
+                destination=destination,
+                departure="2026-10-01 10:00",
+                arrival="2026-10-01 11:00",
+                number="EA 102",
+            ),
+        ],
+        [valid_first],
+    )
+
+
 class SerpApiProviderTests(SimpleTestCase):
     def test_exact_one_way_maps_live_source_without_booking_or_baggage_claims(
         self,
@@ -107,42 +142,12 @@ class SerpApiProviderTests(SimpleTestCase):
         self.assertFalse(offer.is_fictional)
         self.assertIsNone(offer.purchase_url)
         self.assertFalse(offer.is_bookable)
-        self.assertEqual(offer.seller_name, "SerpApi / Google Flights")
+        self.assertIsNone(offer.seller_name)
         self.assertEqual(offer.baggage.checked_bag.state, BaggageState.UNKNOWN)
         self.assertEqual(offer.expires_at, NOW)
 
     def test_rejects_partial_disconnected_and_wrong_route_itineraries(self) -> None:
-        valid_first = _flight(
-            origin="AAA",
-            destination="XXX",
-            departure="2026-10-01 08:00",
-            arrival="2026-10-01 09:00",
-            number="EA 101",
-        )
-        malformed_second = _flight(
-            origin="XXX",
-            destination="BBB",
-            departure="2026-10-01 10:00",
-            arrival="2026-10-01 11:00",
-            number="EA 102",
-        )
-        malformed_second.pop("airline")
-        invalid_flights = (
-            [valid_first, malformed_second],
-            [
-                valid_first,
-                _flight(
-                    origin="YYY",
-                    destination="BBB",
-                    departure="2026-10-01 10:00",
-                    arrival="2026-10-01 11:00",
-                    number="EA 102",
-                ),
-            ],
-            [valid_first],
-        )
-
-        for flights in invalid_flights:
+        for flights in _invalid_itineraries():
             with self.subTest(flights=flights):
 
                 def handler(
@@ -172,6 +177,48 @@ class SerpApiProviderTests(SimpleTestCase):
                     plan_date_options(query, TODAY),
                     NOW,
                 )
+                self.assertFalse(result.offers)
+
+    def test_rejects_round_trip_when_inbound_itinerary_is_invalid(self) -> None:
+        for flights in _invalid_itineraries("BBB", "AAA"):
+            with self.subTest(flights=flights):
+
+                def handler(
+                    request: httpx.Request,
+                    flights: list[dict[str, object]] = flights,
+                ) -> httpx.Response:
+                    if request.url.params.get("departure_token"):
+                        return httpx.Response(
+                            200,
+                            json={
+                                "best_flights": [
+                                    {
+                                        "flights": flights,
+                                        "total_duration": 180,
+                                        "price": 240,
+                                    }
+                                ]
+                            },
+                        )
+                    return httpx.Response(
+                        200,
+                        json={"best_flights": [_option(departure_token="token-1")]},
+                    )
+
+                provider = SerpApiProvider(
+                    "key",
+                    transport=httpx.MockTransport(handler),
+                )
+                query = make_query(
+                    cabin=CabinClass.ECONOMY,
+                    return_date=dt.date(2026, 10, 8),
+                )
+                result = provider.search(
+                    query,
+                    plan_date_options(query, TODAY),
+                    NOW,
+                )
+                self.assertEqual(result.requests_made, 2)
                 self.assertFalse(result.offers)
 
     def test_exact_round_trip_follows_three_bounded_outbound_branches(self) -> None:

@@ -52,10 +52,12 @@ ten cards.
 ## Privacy, security, and UI
 
 Search values and provider data are never written to the database, cache,
-session, or logs. Credentials are server-side environment variables and travel
-only in provider authentication headers. CSRF, template autoescaping, redacted
-errors, URL allowlists, response-size bounds, and safe external-link attributes
-remain enforced.
+session, or logs. Credentials remain in server-side environment variables.
+SerpApi requires its key in an HTTPS query parameter, so TravelStan never logs
+provider URLs and suppresses HTTP exception causes that could retain them.
+Other adapters use provider authentication headers. CSRF, template
+autoescaping, redacted errors, URL allowlists, response-size bounds, and safe
+external-link attributes remain enforced.
 
 The interface uses a compact dark layout, native labelled controls, an
 advanced-options disclosure, accessible errors and status messages, and
