@@ -33,7 +33,7 @@ ERROR_DATE_INVALID = "Enter a valid date."
 
 CABIN_CHOICES = (
     (CabinClass.ECONOMY.value, "Economy"),
-    (CabinClass.PREMIUM_ECONOMY.value, "Premium Economy"),
+    (CabinClass.PREMIUM_ECONOMY.value, "Economy+ / Premium Economy"),
     (CabinClass.BUSINESS.value, "Business"),
     (CabinClass.ALL_CLASSES.value, "All classes"),
 )

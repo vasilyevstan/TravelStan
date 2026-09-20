@@ -120,6 +120,8 @@ class SearchFormTests(SimpleTestCase):
         self.assertEqual(
             values, ["economy", "premium_economy", "business", "all_classes"]
         )
+        labels = dict(form.fields["cabin"].choices)
+        self.assertEqual(labels["premium_economy"], "Economy+ / Premium Economy")
 
     def test_invalid_cabin_rejected(self) -> None:
         form = SearchForm(payload(cabin="first"), today=TODAY)

@@ -18,12 +18,14 @@ from ..domain import (
     BaggageAllowances,
     BaggageSlot,
     CabinClass,
+    DataStatus,
     DateOption,
     Itinerary,
     Offer,
     SearchQuery,
     Segment,
 )
+from .base import ProviderSearchResult
 from .fixtures import (
     DEMO_CARRIERS,
     DEMO_FARES,
@@ -145,16 +147,19 @@ def _amount(
 
 
 class SyntheticDemoProvider:
-    """The only provider implementing the normalized protocol."""
+    """Deterministic credential-free provider used by default and in tests."""
 
     name = SOURCE_SYNTHETIC_DEMO
+    display_name = "TravelStan demo"
+    data_status = DataStatus.SYNTHETIC
+    request_cost = 0
 
     def search(
         self,
         query: SearchQuery,
         options: Sequence[DateOption],
         now: dt.datetime,
-    ) -> tuple[Offer, ...]:
+    ) -> ProviderSearchResult:
         offers: list[Offer] = []
         expires_at = now + RESULT_FRESHNESS
         for option in options:
@@ -211,11 +216,7 @@ class SyntheticDemoProvider:
                         source=SOURCE_SYNTHETIC_DEMO,
                         retrieved_at=now,
                         expires_at=expires_at,
+                        data_status=DataStatus.SYNTHETIC,
                     )
                 )
-        return tuple(offers)
-
-
-def get_provider() -> SyntheticDemoProvider:
-    """Return the only available provider; no live mode can be selected."""
-    return SyntheticDemoProvider()
+        return ProviderSearchResult(offers=tuple(offers), requests_made=0)

@@ -2,64 +2,59 @@
 
 ## Accepted contract
 
-**Accepted:** 2026-09-19
-**Architecture base:** `4fe61bdec12ffd6c6a5dc5c77fa79564fae372bc`
-**Validation:** three sealed model-family passes and separate synthesis:
-`gpt-5.4`, `claude-sonnet-5`, `gemini-3.8-flash`, then `grok-4.6`.
-The synthesis is `SIMPLIFICATION_READY`.
+**Revised:** 2026-09-20
 
 TravelStan is a Python 3.13/Django 5.2 modular monolith with server-rendered
-templates, SQLite for local development, vanilla CSS, and optional minimal
-vanilla JavaScript. It is a deterministic, in-process, no-network
-`synthetic_demo` release only. No setting, credential, registry hook, or
-fallback enables live providers. A live activation requires fresh first-party
-`GO` evidence plus renewed architecture and implementation review.
+templates, vanilla CSS, and no required JavaScript. The default
+`synthetic_demo` mode is deterministic and offline. External providers are
+explicitly selected through configuration; synthetic and external results can
+never be mixed or used as fallback for one another.
 
-## Request and planning contract
+## Search and provider boundary
 
-- One adult only; no passenger, child, or infant controls.
-- Origin and destination are distinct upper-case IATA codes matching
-  `^[A-Z]{3}$`; no city lookup is claimed.
-- Departure is strictly after the injected current date. A blank return form
-  value normalizes to `None` and means one-way; a supplied return is strictly
-  after departure.
-- Cabin choices are Economy, Premium Economy, Business, and All classes.
-  `all_classes` means no cabin filter.
-- Exact mode has flexibility `0` and offset `[0]`. Flexible mode is `1..7`
-  with offsets `[0, -1, +1, ... -N, +N]`, at most 15 before filtering.
-  Departure and return shift together; one-way preserves `None`; shifts on or
-  before the injected current date are removed. No Cartesian product,
-  backfill, retries, or background work is permitted.
+- One adult; upper-case three-character IATA airport codes; one-way or return.
+- Exact dates or joint outbound/return flexibility of one to seven days.
+- Economy, Economy+ / Premium Economy, Business, or all supported classes.
+- An explicit checked-bag requirement keeps only offers with a known positive,
+  fare-bound included allowance.
+- `FlightProvider.search()` returns normalized offers, safe provider notices,
+  and the upstream request count. Raw payloads never reach templates.
+- Air France–KLM and Singapore use one native bounded-date request. TUI uses
+  the exact requested dates and emits a limitation notice. Every adapter makes
+  at most one request, uses an eight-second timeout, and performs no retry.
+- Multiple external providers run concurrently. A partial failure is reported
+  generically while successful results remain available; total failure returns
+  one redacted error.
 
-## Provider and result contract
+## Normalized results
 
-Only the synthetic provider implements the normalized provider protocol.
-Templates receive normalized offers, never fixture/raw-provider payloads.
-Searches, results, query values, IP addresses, and provider data are never
-stored in the database, cache, session, or logs.
+Every offer records source, `live`/`trial`/`sandbox`/`synthetic` status,
+retrieval and expiry times, complete segment identity, fare total, seller, and
+an optional validated purchase URL. HTTPS URLs must belong to the source
+adapter's explicit airline-domain allowlist. An offer without a safe URL is
+shown with booking unavailable.
 
-Every offer separates `personal_item`, `carry_on`, `checked_bag`, and
-`extra_paid_bag`. Each has `included`, `not_included`, or `unknown`; missing
-data is never inferred. Checked-bag-required results retain only offers with a
-known positive included checked allowance. Extra-bag price is shown only if it
-is binding and exact.
+Baggage separates personal item, carry-on, checked bag, and extra paid bag.
+Each retains `included`, `not_included`, or `unknown`, plus supplied quantity,
+weight/unit, and binding ancillary price/scope. A purchasable extra bag is not
+part of the fare. Missing data is never reconstructed from cabin, fare family,
+or route policy.
 
-Results use a stable full-itinerary/baggage/price identity, sort by total
-amount, currency, combined duration, and offer ID, deduplicate first-wins,
-and display no more than ten rows. The table shows carrier and operating
-carrier where different, route/schedule/duration/stops, cabin/fare brand, all
-four baggage states, price/currency, source/freshness, and seller/purchase
-state. Demo offers have no seller, URL, or clickable purchase action and are
-persistently labelled fictional, non-live, and non-bookable.
+Results are filtered, sorted by total amount/currency/duration/offer ID,
+first-wins deduplicated on full itinerary/fare/baggage identity, and capped at
+ten cards.
 
-## Security, accessibility, and quality
+## Privacy, security, and UI
 
-Form errors and provider failures are generic and redacted. CSRF and template
-autoescaping remain enabled. The interface uses labelled native controls,
-fieldsets, accessible errors and alert summary, semantic table/caption/headers,
-visible focus, textual status, a 320px card/stacked layout, and works without
-JavaScript.
+Search values and provider data are never written to the database, cache,
+session, or logs. Credentials are server-side environment variables and travel
+only in provider authentication headers. CSRF, template autoescaping, redacted
+errors, URL allowlists, response-size bounds, and safe external-link attributes
+remain enforced.
 
-CI must run Python 3.13 Django tests, lint, format, Django checks, and
-synthetic-only/no-network verification, alongside governance checks. Work
-flows feature branch → `dev` PR → `master` release PR.
+The interface uses a light editorial layout, native labelled controls, a
+compact advanced-options disclosure, accessible errors and status messages,
+and responsive offer cards down to 320px. It works without JavaScript.
+
+Tests and CI use deterministic fixtures and `httpx.MockTransport`; they never
+contact provider endpoints or require credentials.

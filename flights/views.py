@@ -14,6 +14,7 @@ from django.shortcuts import render
 
 from .clock import current_date, current_datetime
 from .forms import SearchForm
+from .providers import configured_provider_names, provider_display_names
 from .services import SearchUnavailable, run_search
 
 TEMPLATE = "flights/search.html"
@@ -36,6 +37,8 @@ def search(
         "outcome": None,
         "error_message": None,
         "summary_error": None,
+        "provider_names": provider_display_names(),
+        "synthetic_mode": configured_provider_names() == ("synthetic_demo",),
     }
 
     if request.method == "POST":

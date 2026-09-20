@@ -1,9 +1,47 @@
 # Provider research gate
 
-**Decision date:** 2026-09-19
-**Status:** `NO_GO` for every live provider
-**Release disposition:** `synthetic_demo` only; no live adapter or airline-direct
-purchase control is enabled.
+## 2026-09-20 personal-use reassessment
+
+**Status:** `CONDITIONAL_GO` for fail-closed adapters; `synthetic_demo` remains
+the default until the user supplies and validates credentials.
+
+The product now permits a named airline or partner booking link and may show a
+real fare without a verified purchase URL. Trial and sandbox feeds are allowed
+when visibly labeled. This explicitly relaxes the 2026-09-19 requirement that
+every result prove an airline-controlled purchase link; it does not relax the
+rules for honest data status, baggage proof, credential handling, provider
+terms, or source method.
+
+| Candidate | Status | Implementation decision |
+| --- | --- | --- |
+| Air France–KLM Open Data | `CONDITIONAL_GO` | Implemented behind `AFKL_API_KEY`. Official Offers documentation describes future bookable schedules and total fares; fare baggage stays unknown unless bound in the offer response. |
+| Singapore Airlines Flight Search | `CONDITIONAL_GO` | Implemented behind `SINGAPORE_API_KEY`; defaults to `trial` and uses the official native flexible-date request. |
+| TUI Flight Offers | `CONDITIONAL_GO` | Implemented behind `TUI_API_KEY`; defaults to `trial`, maps documented luggage/deeplink fields, and uses exact dates for flexible searches. |
+| Lufthansa OpenAPI | `BLOCKED` | Registration is on hold, so no new personal account can currently activate it. |
+| Transavia | `BLOCKED` | Public evidence is from a 2018 sample and the current portal/schema could not be verified. |
+| Turkish Airlines | `BLOCKED` | An application review is required and public quota, response, and link details remain insufficient. |
+| Skyscanner | `BLOCKED` | Partnership review and booking-generation expectations do not provide a self-service personal free tier. |
+| Travelpayouts Search API | `NO_GO` | Its rules prohibit combining its results with other metasearch APIs and impose booking conversion requirements. |
+| SerpApi / scraped sources | `NO_GO` | The project continues to reject API-wrapped scraping. |
+
+Current first-party evidence:
+
+- [Air France–KLM Offers API](https://klmprod.mashery.com/docs/opendata/offers/)
+  and [API-key setup](https://klmprod.mashery.com/docs/read/opendata/Get_Started)
+- [Singapore Airlines Flight Search](https://developer.singaporeair.com/docs/flight_search/flightavailability)
+- [TUI Flight Offers](https://developer.tui/api-catalog/flight-offers/api-description)
+- [Lufthansa registration hold](https://developer.lufthansa.com/)
+- [Skyscanner authentication](https://developers.skyscanner.net/docs/getting-started/authentication)
+  and [usage guidelines](https://developers.skyscanner.net/docs/getting-started/usage-guidelines)
+- [Travelpayouts Search API rules](https://support.travelpayouts.com/hc/en-us/articles/34788165535250-Search-API-usage-rules)
+
+No provider was contacted with a real credential during implementation.
+Fixture-tested support is not proof that an account has production access.
+
+## 2026-09-19 baseline decision (historical)
+
+**Status at that time:** `NO_GO` for every live provider under the stricter
+airline-direct-link contract.
 
 ## Method
 

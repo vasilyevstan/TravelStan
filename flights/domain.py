@@ -1,7 +1,4 @@
-"""Typed, frozen domain types for the synthetic-demo search slice.
-
-Nothing here touches the database, the network, or any provider credential.
-"""
+"""Provider-neutral, frozen flight-search domain types."""
 
 from __future__ import annotations
 
@@ -11,6 +8,9 @@ from decimal import Decimal
 from enum import StrEnum
 
 SOURCE_SYNTHETIC_DEMO = "synthetic_demo"
+SOURCE_AFKL = "afkl"
+SOURCE_SINGAPORE = "singapore"
+SOURCE_TUI = "tui"
 
 IATA_PATTERN = r"^[A-Z]{3}$"
 
@@ -52,6 +52,22 @@ class BaggageSlot(StrEnum):
     EXTRA_PAID_BAG = "extra_paid_bag"
 
 
+class DataStatus(StrEnum):
+    LIVE = "live"
+    TRIAL = "trial"
+    SANDBOX = "sandbox"
+    SYNTHETIC = "synthetic"
+
+    @property
+    def label(self) -> str:
+        return {
+            DataStatus.LIVE: "Live",
+            DataStatus.TRIAL: "Trial",
+            DataStatus.SANDBOX: "Test",
+            DataStatus.SYNTHETIC: "Demo",
+        }[self]
+
+
 @dataclass(frozen=True, slots=True)
 class BaggageAllowance:
     """One named baggage slot with an explicit state and no inference."""
@@ -62,6 +78,9 @@ class BaggageAllowance:
     price_amount: Decimal | None = None
     price_currency: str | None = None
     price_is_binding: bool = False
+    price_scope: str | None = None
+    weight_amount: Decimal | None = None
+    weight_unit: str | None = None
 
     @property
     def has_known_positive_quantity(self) -> bool:
@@ -98,6 +117,12 @@ class BaggageAllowance:
         return f"{self.price_amount} {self.price_currency}"
 
     @property
+    def weight_label(self) -> str | None:
+        if self.weight_amount is None or self.weight_unit is None:
+            return None
+        return f"{self.weight_amount:g} {self.weight_unit}"
+
+    @property
     def displays_price(self) -> bool:
         """Extra-bag price is shown only when binding and exact."""
         return (
@@ -122,9 +147,20 @@ class BaggageAllowances:
             self.extra_paid_bag,
         )
 
-    def identity(self) -> tuple[tuple[str, str, int | None], ...]:
+    def identity(self) -> tuple[tuple[object, ...], ...]:
         return tuple(
-            (str(row.slot), str(row.state), row.quantity) for row in self.as_rows()
+            (
+                str(row.slot),
+                str(row.state),
+                row.quantity,
+                str(row.price_amount) if row.price_amount is not None else None,
+                row.price_currency,
+                row.price_is_binding,
+                row.price_scope,
+                str(row.weight_amount) if row.weight_amount is not None else None,
+                row.weight_unit,
+            )
+            for row in self.as_rows()
         )
 
 
@@ -156,6 +192,14 @@ class Segment:
             self.arrival.isoformat(),
         )
 
+    @property
+    def departure_label(self) -> str:
+        return self.departure.strftime("%a %d %b · %H:%M")
+
+    @property
+    def arrival_label(self) -> str:
+        return self.arrival.strftime("%a %d %b · %H:%M")
+
 
 @dataclass(frozen=True, slots=True)
 class Itinerary:
@@ -183,10 +227,28 @@ class Itinerary:
 
     @property
     def duration_minutes(self) -> int:
+        if len(self.segments) == 1:
+            return self.segments[0].duration_minutes
         return int((self.arrival - self.departure).total_seconds() // 60)
 
     def identity(self) -> tuple[tuple[str, ...], ...]:
         return tuple(segment.identity() for segment in self.segments)
+
+    @property
+    def stops_label(self) -> str:
+        if self.stops == 0:
+            return "Direct"
+        suffix = "s" if self.stops != 1 else ""
+        return f"{self.stops} stop{suffix}"
+
+    @property
+    def duration_label(self) -> str:
+        hours, minutes = divmod(self.duration_minutes, 60)
+        if hours and minutes:
+            return f"{hours}h {minutes}m"
+        if hours:
+            return f"{hours}h"
+        return f"{minutes}m"
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,8 +264,9 @@ class Offer:
     source: str
     retrieved_at: dt.datetime
     expires_at: dt.datetime
-    seller_name: None = None
-    purchase_url: None = None
+    data_status: DataStatus = DataStatus.SYNTHETIC
+    seller_name: str | None = None
+    purchase_url: str | None = None
     is_bookable: bool = False
     is_fictional: bool = True
 
@@ -235,6 +298,19 @@ class Offer:
             self.combined_duration_minutes,
             self.offer_id,
         )
+
+    @property
+    def cabin_label(self) -> str:
+        return {
+            CabinClass.ECONOMY: "Economy",
+            CabinClass.PREMIUM_ECONOMY: "Economy+ / Premium Economy",
+            CabinClass.BUSINESS: "Business",
+            CabinClass.ALL_CLASSES: "All classes",
+        }[self.cabin]
+
+    @property
+    def status_label(self) -> str:
+        return self.data_status.label
 
 
 @dataclass(frozen=True, slots=True)

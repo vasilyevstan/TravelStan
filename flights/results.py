@@ -1,4 +1,4 @@
-"""Deterministic result assembly: baggage filter, dedupe, sort, row cap."""
+"""Deterministic result assembly: baggage filter, sort, dedupe, row cap."""
 
 from __future__ import annotations
 
@@ -41,4 +41,4 @@ def sort_offers(offers: Iterable[Offer]) -> tuple[Offer, ...]:
 
 def build_results(offers: Iterable[Offer], query: SearchQuery) -> tuple[Offer, ...]:
     filtered = filter_by_luggage(offers, query)
-    return sort_offers(deduplicate(filtered))[:MAX_RESULT_ROWS]
+    return deduplicate(sort_offers(filtered))[:MAX_RESULT_ROWS]

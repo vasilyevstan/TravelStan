@@ -1,8 +1,4 @@
-"""Settings for the synthetic-demo TravelStan slice.
-
-The slice is deterministic, in-process, and credential-free. No provider
-credentials, registry hooks, or network settings exist here.
-"""
+"""Settings for the local TravelStan application."""
 
 import os
 from pathlib import Path
@@ -80,4 +76,32 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": "WARNING"},
 }
 
-TRAVELSTAN_PROVIDER_MODE = "synthetic_demo"
+
+def _csv_setting(name: str, default: str) -> tuple[str, ...]:
+    return tuple(
+        item.strip().lower()
+        for item in os.environ.get(name, default).split(",")
+        if item.strip()
+    )
+
+
+TRAVELSTAN_PROVIDERS = _csv_setting("TRAVELSTAN_PROVIDERS", "synthetic_demo")
+TRAVELSTAN_COUNTRY = os.environ.get("TRAVELSTAN_COUNTRY", "EE")
+TRAVELSTAN_LOCALE = os.environ.get("TRAVELSTAN_LOCALE", "en-EE")
+
+AFKL_API_KEY = os.environ.get("AFKL_API_KEY", "")
+AFKL_TRAVEL_HOST = os.environ.get("AFKL_TRAVEL_HOST", "KL")
+AFKL_DATA_STATUS = os.environ.get("AFKL_DATA_STATUS", "trial")
+
+SINGAPORE_API_KEY = os.environ.get("SINGAPORE_API_KEY", "")
+SINGAPORE_DATA_STATUS = os.environ.get("SINGAPORE_DATA_STATUS", "trial")
+SINGAPORE_API_URL = os.environ.get(
+    "SINGAPORE_API_URL",
+    "https://apigw.singaporeair.com/api/uat/v1/commercial/flightavailability/get",
+)
+
+TUI_API_KEY = os.environ.get("TUI_API_KEY", "")
+TUI_DATA_STATUS = os.environ.get("TUI_DATA_STATUS", "trial")
+TUI_API_URL = os.environ.get(
+    "TUI_API_URL", "https://prod.api.tui/flightOffers/flightOffers_v1"
+)
