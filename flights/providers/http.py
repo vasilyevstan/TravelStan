@@ -42,8 +42,9 @@ def request_json(
             payload = response.json()
     except ProviderError:
         raise
-    except (httpx.HTTPError, ValueError) as exc:
-        raise ProviderError("Provider request failed.") from exc
+    except (httpx.HTTPError, ValueError):
+        # HTTP exceptions can retain request URLs containing provider secrets.
+        raise ProviderError("Provider request failed.") from None
     if not isinstance(payload, dict):
         raise ProviderError("Provider returned an unsupported response.")
     return payload

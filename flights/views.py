@@ -30,6 +30,7 @@ def search(
     today_provider = today_provider or current_date
     now_provider = now_provider or current_datetime
     today = today_provider()
+    provider_names = configured_provider_names()
     context: dict[str, object] = {
         "today": today,
         "searched": False,
@@ -37,8 +38,9 @@ def search(
         "outcome": None,
         "error_message": None,
         "summary_error": None,
-        "provider_names": provider_display_names(),
-        "synthetic_mode": configured_provider_names() == ("synthetic_demo",),
+        "provider_names": provider_display_names(provider_names),
+        "synthetic_mode": provider_names == ("synthetic_demo",),
+        "experimental_mode": provider_names == ("serpapi",),
     }
 
     if request.method == "POST":

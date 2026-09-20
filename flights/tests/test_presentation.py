@@ -97,6 +97,7 @@ class ServiceTests(TestCase):
                 return ProviderSearchResult(
                     offers=(offer,),
                     notices=(ProviderNotice(self.name, "Limited inventory."),),
+                    requests_made=4,
                 )
 
         class FailedProvider:
@@ -114,7 +115,7 @@ class ServiceTests(TestCase):
         ):
             outcome = run_search(make_query(), today=TODAY, now=NOW)
         self.assertEqual(outcome.offers, (offer,))
-        self.assertEqual(outcome.requests_made, 2)
+        self.assertEqual(outcome.requests_made, 5)
         messages = [notice.message for notice in outcome.notices]
         self.assertIn("Limited inventory.", messages)
         self.assertIn("Failed Air is temporarily unavailable.", messages)

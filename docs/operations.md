@@ -13,55 +13,54 @@ export TRAVELSTAN_PROVIDERS=synthetic_demo
 The search path performs no database or cache writes and uses no session or
 authentication middleware.
 
-## External providers
+## Experimental SerpApi provider
 
-Create developer applications with the providers you intend to use, then
-export only those providers and keys. Never put populated secrets in the
-repository or client-side code.
+Create a SerpApi account separately, then export its key only in the server
+process. Never put a populated key in the repository, browser, screenshots, or
+chat.
 
 ```bash
-export TRAVELSTAN_PROVIDERS=afkl,singapore,tui
-export AFKL_API_KEY='...'
-export SINGAPORE_API_KEY='...'
-export TUI_API_KEY='...'
+export TRAVELSTAN_PROVIDERS=serpapi
+export SERPAPI_API_KEY='...'
+export SERPAPI_CURRENCY=EUR
 .venv/bin/python manage.py check --fail-level WARNING
 ```
 
-Use `AFKL_DATA_STATUS`, `SINGAPORE_DATA_STATUS`, and `TUI_DATA_STATUS` to
-select `trial`, `sandbox`, or `live`. Their default is `trial`; change one to
-`live` only after the provider confirms production data for the issued
-credential.
-
-`TRAVELSTAN_COUNTRY=EE` and `TRAVELSTAN_LOCALE=en-EE` set the local point of
-sale and language. TUI currently requires GBP in this adapter.
-`AFKL_TRAVEL_HOST` accepts `KL` or `AF` and defaults to `KL`.
+`TRAVELSTAN_COUNTRY=EE` and `TRAVELSTAN_LOCALE=en-EE` set the Google market
+and language. SerpApi authentication requires its key as an upstream query
+parameter; TravelStan never renders or logs the provider URL and removes HTTP
+exception causes that could retain it.
 
 ## Failure and quota behavior
 
-- One search makes zero upstream calls in synthetic mode and at most one call
-  to each configured external provider.
-- Calls run concurrently with an eight-second timeout and no retry.
-- A partial outage leaves other results visible with a generic provider notice.
-- Total external failure produces one redacted error and never synthetic data.
-- No response cache or persistent quota ledger exists. At twenty searches per
-  month, three configured providers produce at most sixty search calls, plus
-  any manual credential-validation calls.
+- One search makes zero upstream calls in synthetic mode.
+- SerpApi exact one-way uses one request; exact round-trip uses at most four.
+- Flexible mode is limited to `±1`; a round-trip uses at most six requests.
+- All classes, checked-bag-required, and wider flexible searches make zero
+  requests and return an explicit limitation notice.
+- Calls use the shared timeout and no retry. Total failure produces one
+  redacted error and never synthetic data.
+- `no_cache=true` is sent for freshness, so successful calls count toward the
+  plan. Twenty maximum-budget searches use at most 120 calls, below the
+  current free allowance of 250.
+- No persistent quota ledger exists. Disable SerpApi automatic early renewal
+  and monitor its dashboard before increasing search scope.
 
-HTTP 401/403 means the relevant key, product subscription, or environment is
-wrong. HTTP 429 means the provider quota is exhausted. Neither condition is
-retried automatically.
+HTTP 401/403 means the key or account is unusable. HTTP 429 means the provider
+quota is exhausted. Neither condition is retried automatically.
 
 ## Credential validation checklist
 
-Before changing a provider from trial to live:
+Before relying on the experiment:
 
-1. Run `manage.py check` with only that provider selected.
-2. Submit one ordinary exact-date search on a route the provider operates.
-3. Confirm that the result is current and that price currency and passenger
-   scope match the provider page.
-4. Open one rendered booking link and confirm its seller and itinerary without
-   sharing or recording the full URL.
-5. Confirm the account's current quota, retention, and permitted personal-use
-   terms in the provider portal.
+1. Run `manage.py check` with only `serpapi` selected.
+2. Disable automatic early renewal in the SerpApi account.
+3. Submit one exact one-way search and one exact round-trip search.
+4. Confirm dates, itinerary, requested currency, and passenger scope against
+   Google Flights or the eventual seller page.
+5. Confirm the account dashboard counted no more than five calls for those two
+   searches.
+6. Verify that no API key, request URL, or raw provider payload appears in the
+   rendered page or application logs.
 
 Disable a provider immediately by removing it from `TRAVELSTAN_PROVIDERS`.

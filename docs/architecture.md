@@ -6,9 +6,10 @@
 
 TravelStan is a Python 3.13/Django 5.2 modular monolith with server-rendered
 templates, vanilla CSS, and no required JavaScript. The default
-`synthetic_demo` mode is deterministic and offline. External providers are
-explicitly selected through configuration; synthetic and external results can
-never be mixed or used as fallback for one another.
+`synthetic_demo` mode is deterministic and offline. The only selectable
+external provider is the explicitly approved personal SerpApi experiment.
+Synthetic and external results can never be mixed or used as fallback for one
+another.
 
 ## Search and provider boundary
 
@@ -18,21 +19,25 @@ never be mixed or used as fallback for one another.
 - An explicit checked-bag requirement keeps only offers with a known positive,
   fare-bound included allowance.
 - `FlightProvider.search()` returns normalized offers, safe provider notices,
-  and the upstream request count. Raw payloads never reach templates.
-- Air France–KLM and Singapore use one native bounded-date request. TUI uses
-  the exact requested dates and emits a limitation notice. Every adapter makes
-  at most one request, uses an eight-second timeout, and performs no retry.
-- Multiple external providers run concurrently. A partial failure is reported
-  generically while successful results remain available; total failure returns
-  one redacted error.
+  and the actual upstream request count. Raw payloads never reach templates.
+- SerpApi exact one-way search uses one request. Exact round-trip follows at
+  most three outbound branches for a maximum of four requests. Flexible mode
+  is limited to `±1` joint date shifts and follows one outbound branch per date
+  pair, for a maximum of six requests.
+- All classes, flexibility above `±1`, and checked-bag-required requests fail
+  closed with a clear provider notice and zero upstream calls.
+- The adapter requests fresh data with `no_cache=true`, performs no retry, and
+  does not retrieve booking options. A provider failure returns one redacted
+  error and never synthetic data.
 
 ## Normalized results
 
-Every offer records source, `live`/`trial`/`sandbox`/`synthetic` status,
+Every offer records source,
+`live`/`experimental`/`trial`/`sandbox`/`synthetic` status,
 retrieval and expiry times, complete segment identity, fare total, seller, and
-an optional validated purchase URL. HTTPS URLs must belong to the source
-adapter's explicit airline-domain allowlist. An offer without a safe URL is
-shown with booking unavailable.
+an optional validated purchase URL. The SerpApi experiment deliberately supplies no purchase URL because its
+documented booking actions are Google/intermediary redirects rather than
+proved airline-controlled URLs.
 
 Baggage separates personal item, carry-on, checked bag, and extra paid bag.
 Each retains `included`, `not_included`, or `unknown`, plus supplied quantity,
@@ -58,3 +63,7 @@ responsive offer cards down to 320px. It works without JavaScript.
 
 Tests and CI use deterministic fixtures and `httpx.MockTransport`; they never
 contact provider endpoints or require credentials.
+
+The AF–KLM, Singapore, and TUI files are retained only as offline research
+prototypes. They are excluded from the runtime registry after first-party
+schema review found unresolved or confirmed mapping and workflow mismatches.

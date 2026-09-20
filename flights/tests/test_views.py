@@ -115,6 +115,17 @@ class ViewTests(TestCase):
         self.assertIn('target="_blank" rel="noopener noreferrer"', content)
         self.assertIn("Continue to Air France–KLM", content)
 
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="do-not-render",
+    )
+    def test_serpapi_mode_discloses_experimental_source_and_retention(self) -> None:
+        content = self.client.get(self.url).content.decode()
+        self.assertIn("Experimental live-source comparison", content)
+        self.assertIn("scrapes Google Flights", content)
+        self.assertIn("retain ordinary searches for up to 31 days", content)
+        self.assertNotIn("do-not-render", content)
+
     def test_results_capped_at_ten_rows(self) -> None:
         response = self.client.post(
             self.url, valid_post(mode="flexible", flexibility="7")

@@ -18,7 +18,7 @@
         <span>TravelStan</span>
       </a>
       <div class="provider-summary" aria-label="Configured data sources">
-        {% if synthetic_mode %}<span class="status-dot status-dot--demo"></span>Sample data{% else %}<span class="status-dot"></span>{{ provider_names|join:", " }}{% endif %}
+        {% if synthetic_mode %}<span class="status-dot status-dot--demo"></span>Sample data{% elif experimental_mode %}<span class="status-dot status-dot--experimental"></span>{{ provider_names|join:", " }} · experimental{% else %}<span class="status-dot"></span>{{ provider_names|join:", " }}{% endif %}
       </div>
     </div>
 
@@ -33,7 +33,12 @@
     {% if synthetic_mode %}
       <aside class="source-note source-note--demo" role="note">
         <span class="source-note-icon" aria-hidden="true">i</span>
-        <span><strong>Sample results.</strong> Prices are generated and cannot be booked. Connect an airline API key for live availability.</span>
+        <span><strong>Sample results.</strong> Prices are generated and cannot be booked. Configure the experimental SerpApi provider for live-source comparison.</span>
+      </aside>
+    {% elif experimental_mode %}
+      <aside class="source-note source-note--experimental" role="note">
+        <span class="source-note-icon" aria-hidden="true">i</span>
+        <span><strong>Experimental live-source comparison.</strong> Searches are sent to SerpApi, which scrapes Google Flights and may retain ordinary searches for up to 31 days. Checked baggage and booking links are not guaranteed.</span>
       </aside>
     {% endif %}
 
@@ -286,7 +291,7 @@
   </main>
 
   <footer class="site-footer">
-    <p>TravelStan compares offers and sends booking to the named seller. It does not sell tickets or take payment.</p>
+    <p>TravelStan compares offers but does not sell tickets or take payment. Experimental SerpApi results must be confirmed on the seller's page.</p>
     <p>No searches or results are stored.</p>
   </footer>
 </body>

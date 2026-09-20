@@ -16,11 +16,9 @@ from flights.domain import (
 )
 from flights.planner import plan_date_options
 from flights.providers import (
-    AirFranceKLMProvider,
     FlightProvider,
-    SingaporeAirlinesProvider,
+    SerpApiProvider,
     SyntheticDemoProvider,
-    TUIProvider,
     configuration_errors,
     get_providers,
 )
@@ -115,20 +113,16 @@ class SyntheticProviderTests(SimpleTestCase):
 
 class ProviderRegistryTests(SimpleTestCase):
     @override_settings(
-        TRAVELSTAN_PROVIDERS=("afkl", "singapore", "tui"),
-        AFKL_API_KEY="afkl-test",
-        SINGAPORE_API_KEY="sq-test",
-        TUI_API_KEY="tui-test",
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="serpapi-test",
     )
-    def test_all_supported_external_providers_can_be_configured(self) -> None:
+    def test_serpapi_can_be_configured(self) -> None:
         providers = get_providers()
-        self.assertEqual(
-            [type(provider) for provider in providers],
-            [AirFranceKLMProvider, SingaporeAirlinesProvider, TUIProvider],
-        )
+        self.assertEqual([type(provider) for provider in providers], [SerpApiProvider])
 
     @override_settings(
-        TRAVELSTAN_PROVIDERS=("synthetic_demo", "afkl"), AFKL_API_KEY="test"
+        TRAVELSTAN_PROVIDERS=("synthetic_demo", "serpapi"),
+        SERPAPI_API_KEY="test",
     )
     def test_synthetic_cannot_mix_with_external_results(self) -> None:
         self.assertIn(
@@ -136,12 +130,16 @@ class ProviderRegistryTests(SimpleTestCase):
             configuration_errors(),
         )
 
-    @override_settings(TRAVELSTAN_PROVIDERS=("afkl",), AFKL_API_KEY="")
+    @override_settings(TRAVELSTAN_PROVIDERS=("serpapi",), SERPAPI_API_KEY="")
     def test_external_provider_fails_closed_without_key(self) -> None:
         self.assertIn(
-            "AFKL_API_KEY is required when afkl is enabled.",
+            "SERPAPI_API_KEY is required when serpapi is enabled.",
             configuration_errors(),
         )
+
+    @override_settings(TRAVELSTAN_PROVIDERS=("afkl",), AFKL_API_KEY="test")
+    def test_unverified_direct_adapter_is_not_runtime_selectable(self) -> None:
+        self.assertIn("Unknown TravelStan provider: afkl.", configuration_errors())
 
     @override_settings(TRAVELSTAN_PROVIDERS=("synthetic_demo", "synthetic_demo"))
     def test_duplicate_provider_configuration_is_rejected(self) -> None:

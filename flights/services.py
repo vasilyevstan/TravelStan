@@ -67,7 +67,9 @@ def run_search(query: SearchQuery, today: dt.date, now: dt.datetime) -> SearchOu
 
     raw_offers: list[Offer] = []
     notices: list[ProviderNotice] = []
-    requests_made = sum(provider.request_cost for provider in providers)
+    requests_made = sum(result.requests_made for result in completed.values()) + sum(
+        provider.request_cost for provider in providers if provider.name in failed
+    )
     sources: list[str] = []
     for provider in providers:
         result = completed.get(provider.name)

@@ -1,9 +1,39 @@
 # Provider research gate
 
-## 2026-09-20 personal-use reassessment
+## 2026-09-20 constrained SerpApi experiment authorization
 
-**Status:** `CONDITIONAL_GO` for fail-closed adapters; `synthetic_demo` remains
-the default until the user supplies and validates credentials.
+**Status:** implementation authorized for private personal testing only.
+
+The user selected SerpApi because direct-airline integrations provide
+carrier-specific slices and cannot deliver maintainable comparison variety.
+This is an explicit, narrow exception to the project's no-scraping-source
+default; it does not authorize browser automation, direct Google scraping, or
+other scraping providers.
+
+The approved implementation:
+
+- keeps `synthetic_demo` as the credential-free default;
+- makes SerpApi the only selectable external provider;
+- labels results `experimental` with SerpApi / Google Flights provenance;
+- supports exact dates and at most `±1` joint date shifts;
+- enforces at most six upstream requests per submitted search;
+- sends `no_cache=true`;
+- rejects All classes and checked-bag-required searches without a request;
+- leaves all baggage fields unknown;
+- does not request or render booking actions; and
+- never falls back to synthetic results after failure.
+
+AF–KLM, Singapore, and TUI adapters from the unmerged provider branch remain
+offline prototypes and are removed from runtime selection. First-party review
+confirmed material version/schema/workflow gaps, while adding airlines one by
+one does not solve the broad-comparison requirement.
+
+## 2026-09-20 direct-airline reassessment (superseded)
+
+**Historical status:** initially `CONDITIONAL_GO` for fail-closed prototypes.
+The later SerpApi decision above supersedes their runtime selection after
+current official samples exposed material adapter mismatches and the user
+confirmed that airline-by-airline coverage does not meet the comparison goal.
 
 The product now permits a named airline or partner booking link and may show a
 real fare without a verified purchase URL. Trial and sandbox feeds are allowed
@@ -14,15 +44,15 @@ terms, or source method.
 
 | Candidate | Status | Implementation decision |
 | --- | --- | --- |
-| Air France–KLM Open Data | `CONDITIONAL_GO` | Implemented behind `AFKL_API_KEY`. Official Offers documentation describes future bookable schedules and total fares; fare baggage stays unknown unless bound in the offer response. |
-| Singapore Airlines Flight Search | `CONDITIONAL_GO` | Implemented behind `SINGAPORE_API_KEY`; defaults to `trial` and uses the official native flexible-date request. |
-| TUI Flight Offers | `CONDITIONAL_GO` | Implemented behind `TUI_API_KEY`; defaults to `trial`, maps documented luggage/deeplink fields, and uses exact dates for flexible searches. |
+| Air France–KLM Open Data | `CONDITIONAL_GO` | Offline prototype only. Official Offers usage is free, but current v3 compatibility, entitlement, quota, terms, and response behavior remain unverified. |
+| Singapore Airlines Flight Search | `CONDITIONAL_GO` | Offline prototype only. Official samples disprove the implemented price path and do not document the proposed flexible-date parameters. |
+| TUI Flight Offers | `CONDITIONAL_GO` | Offline prototype only. Current documentation conflicts with the implemented price, cabin, baggage, and standalone deeplink assumptions. |
 | Lufthansa OpenAPI | `BLOCKED` | Registration is on hold, so no new personal account can currently activate it. |
 | Transavia | `BLOCKED` | Public evidence is from a 2018 sample and the current portal/schema could not be verified. |
 | Turkish Airlines | `BLOCKED` | An application review is required and public quota, response, and link details remain insufficient. |
 | Skyscanner | `BLOCKED` | Partnership review and booking-generation expectations do not provide a self-service personal free tier. |
 | Travelpayouts Search API | `NO_GO` | Its rules prohibit combining its results with other metasearch APIs and impose booking conversion requirements. |
-| SerpApi / scraped sources | `NO_GO` | The project continues to reject API-wrapped scraping. |
+| SerpApi / scraped sources | `NO_GO` | Historical decision before the user explicitly authorized the later constrained experiment. |
 
 Current first-party evidence:
 
@@ -228,4 +258,6 @@ additional alternatives.
    the repository.
 7. Default to exact dates and enforce monthly/hourly call budgets.
 
-No SerpApi credential or implementation is authorized by this reassessment.
+This historical reassessment did not itself authorize implementation. The
+later 2026-09-20 decision above authorizes only the constrained experiment
+described there.

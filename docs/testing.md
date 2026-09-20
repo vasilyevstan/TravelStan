@@ -20,8 +20,9 @@ must not make real provider calls or require provider credentials.
 | `flights/tests/test_forms.py` | Distinct upper-case IATA codes, strictly future departure via the injected current date, blank return normalizing to one-way `None`, strictly later return, exact/flexible modes, flexibility `1..7`, the four cabin choices, the required explicit checked-luggage choice, single adult, and generic redacted messages. |
 | `flights/tests/test_planner.py` | Exact offset `[0]`, canonical flexible `[0, -1, +1, ...]`, the 15-option pre-filter cap, joint departure/return shifting, one-way preservation, removal of shifts on or before the current date, and no Cartesian product or backfill. |
 | `flights/tests/test_results.py` | Four-slot baggage, checked-required filtering, ancillary/weight identity, sort-before-dedupe, and the ten-card cap. |
-| `flights/tests/test_provider.py` | Synthetic determinism, no-network operation, provider registry configuration, key requirements, and synthetic/live separation. |
-| `flights/tests/test_provider_adapters.py` | Mocked AF–KLM, Singapore, and TUI request/response contracts, one-call budgets, status labels, safe links, baggage mapping, and no retry. |
+| `flights/tests/test_provider.py` | Synthetic determinism, no-network operation, SerpApi registry configuration, key requirements, synthetic/external separation, and rejection of unverified direct adapters. |
+| `flights/tests/test_provider_adapters.py` | Offline prototype fixtures for AF–KLM, Singapore, and TUI. Passing fixtures do not establish compatibility with current official schemas. |
+| `flights/tests/test_serpapi.py` | Mocked exact and `±1` SerpApi flows, dynamic request counts, six-request cap, unknown baggage, omitted booking links, unsupported-query fail-closed behavior, and secret-safe errors. |
 | `flights/tests/test_views.py` | POST/CSRF flow, honest source labelling, accessible offer cards, redacted failures, no-JavaScript rendering, and no persistence/session/cache/log capture. |
 | `flights/tests/test_presentation.py` | Dark responsive card CSS, viewport metadata, service-level result assembly, and zero database queries per search. |
 
@@ -43,3 +44,6 @@ Regression tests prove:
 
 Provider-adapter tests count actual upstream calls for return-leg selection and
 flexible-date handling. Submitted form count is not a valid quota proxy.
+
+SerpApi CI tests use `httpx.MockTransport`; no API key or live Google Flights
+request is permitted.

@@ -88,20 +88,6 @@ def _csv_setting(name: str, default: str) -> tuple[str, ...]:
 TRAVELSTAN_PROVIDERS = _csv_setting("TRAVELSTAN_PROVIDERS", "synthetic_demo")
 TRAVELSTAN_COUNTRY = os.environ.get("TRAVELSTAN_COUNTRY", "EE")
 TRAVELSTAN_LOCALE = os.environ.get("TRAVELSTAN_LOCALE", "en-EE")
-
-AFKL_API_KEY = os.environ.get("AFKL_API_KEY", "")
-AFKL_TRAVEL_HOST = os.environ.get("AFKL_TRAVEL_HOST", "KL")
-AFKL_DATA_STATUS = os.environ.get("AFKL_DATA_STATUS", "trial")
-
-SINGAPORE_API_KEY = os.environ.get("SINGAPORE_API_KEY", "")
-SINGAPORE_DATA_STATUS = os.environ.get("SINGAPORE_DATA_STATUS", "trial")
-SINGAPORE_API_URL = os.environ.get(
-    "SINGAPORE_API_URL",
-    "https://apigw.singaporeair.com/api/uat/v1/commercial/flightavailability/get",
-)
-
-TUI_API_KEY = os.environ.get("TUI_API_KEY", "")
-TUI_DATA_STATUS = os.environ.get("TUI_DATA_STATUS", "trial")
-TUI_API_URL = os.environ.get(
-    "TUI_API_URL", "https://prod.api.tui/flightOffers/flightOffers_v1"
-)
+SERPAPI_API_KEY = os.environ.get("SERPAPI_API_KEY", "")
+SERPAPI_CURRENCY = os.environ.get("SERPAPI_CURRENCY", "EUR")
+SERPAPI_API_URL = os.environ.get("SERPAPI_API_URL", "https://serpapi.com/search.json")

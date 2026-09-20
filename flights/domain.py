@@ -8,6 +8,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 SOURCE_SYNTHETIC_DEMO = "synthetic_demo"
+SOURCE_SERPAPI = "serpapi"
 SOURCE_AFKL = "afkl"
 SOURCE_SINGAPORE = "singapore"
 SOURCE_TUI = "tui"
@@ -54,6 +55,7 @@ class BaggageSlot(StrEnum):
 
 class DataStatus(StrEnum):
     LIVE = "live"
+    EXPERIMENTAL = "experimental"
     TRIAL = "trial"
     SANDBOX = "sandbox"
     SYNTHETIC = "synthetic"
@@ -62,6 +64,7 @@ class DataStatus(StrEnum):
     def label(self) -> str:
         return {
             DataStatus.LIVE: "Live",
+            DataStatus.EXPERIMENTAL: "Experimental",
             DataStatus.TRIAL: "Trial",
             DataStatus.SANDBOX: "Test",
             DataStatus.SYNTHETIC: "Demo",
@@ -204,6 +207,7 @@ class Segment:
 @dataclass(frozen=True, slots=True)
 class Itinerary:
     segments: tuple[Segment, ...]
+    reported_duration_minutes: int | None = None
 
     @property
     def origin(self) -> str:
@@ -227,6 +231,8 @@ class Itinerary:
 
     @property
     def duration_minutes(self) -> int:
+        if self.reported_duration_minutes is not None:
+            return self.reported_duration_minutes
         if len(self.segments) == 1:
             return self.segments[0].duration_minutes
         return int((self.arrival - self.departure).total_seconds() // 60)

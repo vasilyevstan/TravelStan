@@ -13,6 +13,8 @@
   --accent-soft: #132a40;
   --demo: #e9b872;
   --demo-soft: #291f15;
+  --experimental: #bd9cff;
+  --experimental-soft: #211936;
   --danger: #ff8585;
   --danger-soft: #2b171a;
   --focus: #ffd166;
@@ -131,6 +133,11 @@ a { color: var(--accent); }
   box-shadow: 0 0 0 3px rgb(233 184 114 / 12%);
 }
 
+.status-dot--experimental {
+  background: var(--experimental);
+  box-shadow: 0 0 0 3px rgb(189 156 255 / 12%);
+}
+
 .hero { padding: 3.1rem 0 2rem; }
 
 .eyebrow {
@@ -176,6 +183,22 @@ h1 {
   border-color: #493a27;
   background: rgb(41 31 21 / 72%);
 }
+
+.source-note--experimental {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: #d9c9f8;
+  border-color: #4c3b70;
+  background: rgb(33 25 54 / 78%);
+}
+
+.source-note--experimental .source-note-icon {
+  color: var(--experimental);
+  border-color: #66518f;
+}
+
+.source-note--experimental strong { color: #eadfff; }
 
 .source-note-icon {
   display: grid;
@@ -466,6 +489,12 @@ input[aria-invalid="true"], select[aria-invalid="true"] {
   color: var(--demo);
   background: var(--demo-soft);
   border-color: #493a27;
+}
+
+.data-badge--experimental {
+  color: var(--experimental);
+  background: var(--experimental-soft);
+  border-color: #4c3b70;
 }
 
 .source-name { font-size: 0.82rem; }

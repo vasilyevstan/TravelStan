@@ -39,3 +39,13 @@ data, credentials, source code, or domain rules from other projects.
 - External provider code can be fixture-tested before credentials exist, but
   it remains conditional until one authenticated response verifies the current
   endpoint, schema, quota, and booking-link behavior.
+- Direct-airline APIs provide carrier-specific inventory slices, not neutral
+  comparison coverage. Adding airlines one by one is not a maintainable path
+  to broad personal flight comparison.
+- For the explicitly approved SerpApi experiment, broad coverage is obtained
+  by accepting a scraping intermediary. The adapter must remain visibly
+  experimental, omit unproved checked-bag and airline-direct claims, use no
+  synthetic fallback, and enforce a six-request per-search ceiling.
+- Fixture tests exposed why provider samples must be matched exactly:
+  Singapore's official total is under `fareSummary.fareTotal.totalAmount`, and
+  TUI documents `prices.totalPrice` plus a multi-step booking-link flow.
