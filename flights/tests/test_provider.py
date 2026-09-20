@@ -1,15 +1,27 @@
-"""Synthetic provider contract: deterministic, fictional, offline."""
+"""Synthetic provider and fail-closed registry contracts."""
 
 from __future__ import annotations
 
 import datetime as dt
 import socket
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
-from flights.domain import SOURCE_SYNTHETIC_DEMO, BaggageState, CabinClass, SearchMode
+from flights.domain import (
+    SOURCE_SYNTHETIC_DEMO,
+    BaggageState,
+    CabinClass,
+    DataStatus,
+    SearchMode,
+)
 from flights.planner import plan_date_options
-from flights.providers import FlightProvider, SyntheticDemoProvider, get_provider
+from flights.providers import (
+    FlightProvider,
+    SerpApiProvider,
+    SyntheticDemoProvider,
+    configuration_errors,
+    get_providers,
+)
 
 from .factories import NOW, TODAY, make_query
 
@@ -24,15 +36,16 @@ def _block(*args: object, **kwargs: object) -> None:
 
 class SyntheticProviderTests(SimpleTestCase):
     def setUp(self) -> None:
-        self.provider = get_provider()
+        self.provider = get_providers()[0]
 
     def _search(self, query):  # type: ignore[no-untyped-def]
-        return self.provider.search(query, plan_date_options(query, TODAY), NOW)
+        return self.provider.search(query, plan_date_options(query, TODAY), NOW).offers
 
     def test_provider_implements_normalized_protocol(self) -> None:
         self.assertIsInstance(self.provider, SyntheticDemoProvider)
         self.assertIsInstance(self.provider, FlightProvider)
         self.assertEqual(self.provider.name, SOURCE_SYNTHETIC_DEMO)
+        self.assertEqual(self.provider.data_status, DataStatus.SYNTHETIC)
 
     def test_offers_are_normalized_demo_values(self) -> None:
         offers = self._search(make_query())
@@ -64,6 +77,8 @@ class SyntheticProviderTests(SimpleTestCase):
             if extra.price_amount is not None and not extra.price_is_binding:
                 self.assertFalse(extra.displays_price)
                 self.assertIsNone(extra.price_label)
+            if extra.displays_price:
+                self.assertIsNot(extra.state, BaggageState.INCLUDED)
 
     def test_cabin_filter_applies_and_all_classes_does_not(self) -> None:
         economy = self._search(make_query(cabin=CabinClass.ECONOMY))
@@ -95,14 +110,40 @@ class SyntheticProviderTests(SimpleTestCase):
             socket.create_connection = original_create  # type: ignore[assignment]
         self.assertTrue(offers)
 
-    def test_no_urllib_or_http_client_imports_in_flights_package(self) -> None:
-        import pathlib
 
-        root = pathlib.Path(__file__).resolve().parents[1]
-        banned = ("import requests", "urllib." + "request", "http." + "client", "httpx")
-        for path in root.rglob("*.py"):
-            if path.parent.name == "tests":
-                continue
-            text = path.read_text(encoding="utf-8")
-            for token in banned:
-                self.assertNotIn(token, text, f"{path} references {token}")
+class ProviderRegistryTests(SimpleTestCase):
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="serpapi-test",
+    )
+    def test_serpapi_can_be_configured(self) -> None:
+        providers = get_providers()
+        self.assertEqual([type(provider) for provider in providers], [SerpApiProvider])
+
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("synthetic_demo", "serpapi"),
+        SERPAPI_API_KEY="test",
+    )
+    def test_synthetic_cannot_mix_with_external_results(self) -> None:
+        self.assertIn(
+            "Synthetic and external providers cannot be enabled together.",
+            configuration_errors(),
+        )
+
+    @override_settings(TRAVELSTAN_PROVIDERS=("serpapi",), SERPAPI_API_KEY="")
+    def test_external_provider_fails_closed_without_key(self) -> None:
+        self.assertIn(
+            "SERPAPI_API_KEY is required when serpapi is enabled.",
+            configuration_errors(),
+        )
+
+    @override_settings(TRAVELSTAN_PROVIDERS=("afkl",), AFKL_API_KEY="test")
+    def test_unverified_direct_adapter_is_not_runtime_selectable(self) -> None:
+        self.assertIn("Unknown TravelStan provider: afkl.", configuration_errors())
+
+    @override_settings(TRAVELSTAN_PROVIDERS=("synthetic_demo", "synthetic_demo"))
+    def test_duplicate_provider_configuration_is_rejected(self) -> None:
+        self.assertIn(
+            "TRAVELSTAN_PROVIDERS cannot contain duplicate providers.",
+            configuration_errors(),
+        )

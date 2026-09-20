@@ -29,10 +29,14 @@ automatic approval path after its exact-SHA checks pass.
 - Keep TravelStan a small Django modular monolith with server-rendered pages.
 - Use deterministic synthetic fixtures only in tests and CI; never use real
   provider calls or credentials there.
-- Treat provider access as `NO_GO` until current first-party evidence approves
-  the exact comparison use case.
-- Never scrape, automate browsers, bypass access controls, expose secrets, or
-  silently substitute synthetic results for a failed live request.
+- Keep every external provider disabled until current first-party evidence,
+  an issued credential, and a real response validate the configured use case.
+- Do not add scraping, browser automation, or reverse-engineered sources
+  without an explicit product decision and provider-integrity review. The
+  currently approved exception is the constrained SerpApi experiment; it does
+  not authorize direct Google scraping or browser automation.
+- Never bypass access controls, expose secrets, or silently substitute
+  synthetic results for a failed external request.
 - Preserve unknown baggage, price, seller, and freshness information honestly.
 
 ## Agent chain

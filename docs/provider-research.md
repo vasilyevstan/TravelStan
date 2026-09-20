@@ -1,9 +1,108 @@
 # Provider research gate
 
-**Decision date:** 2026-09-19
-**Status:** `NO_GO` for every live provider
-**Release disposition:** `synthetic_demo` only; no live adapter or airline-direct
-purchase control is enabled.
+## 2026-09-20 constrained SerpApi experiment authorization
+
+**Status:** implementation authorized for private personal testing only.
+
+The user selected SerpApi because direct-airline integrations provide
+carrier-specific slices and cannot deliver maintainable comparison variety.
+This is an explicit, narrow exception to the project's no-scraping-source
+default; it does not authorize browser automation, direct Google scraping, or
+other scraping providers.
+
+The approved implementation:
+
+- keeps `synthetic_demo` as the credential-free default;
+- makes SerpApi the only selectable external provider;
+- labels results `experimental` with SerpApi / Google Flights provenance;
+- supports exact dates and at most `±1` joint date shifts;
+- enforces at most six upstream requests per submitted search;
+- sends `no_cache=true`;
+- rejects All classes and checked-bag-required searches without a request;
+- leaves all baggage fields unknown;
+- does not request or render booking actions; and
+- never falls back to synthetic results after failure.
+
+AF–KLM, Singapore, and TUI adapters from the unmerged provider branch remain
+offline prototypes and are removed from runtime selection. First-party review
+confirmed material version/schema/workflow gaps, while adding airlines one by
+one does not solve the broad-comparison requirement.
+
+## 2026-09-20 direct-airline reassessment (superseded)
+
+**Historical status:** initially `CONDITIONAL_GO` for fail-closed prototypes.
+The later SerpApi decision above supersedes their runtime selection after
+current official samples exposed material adapter mismatches and the user
+confirmed that airline-by-airline coverage does not meet the comparison goal.
+
+The product now permits a named airline or partner booking link and may show a
+real fare without a verified purchase URL. Trial and sandbox feeds are allowed
+when visibly labeled. This explicitly relaxes the 2026-09-19 requirement that
+every result prove an airline-controlled purchase link; it does not relax the
+rules for honest data status, baggage proof, credential handling, provider
+terms, or source method.
+
+| Candidate | Status | Implementation decision |
+| --- | --- | --- |
+| Air France–KLM Open Data | `CONDITIONAL_GO` | Offline prototype only. Official Offers usage is free, but current v3 compatibility, entitlement, quota, terms, and response behavior remain unverified. |
+| Singapore Airlines Flight Search | `CONDITIONAL_GO` | Offline prototype only. Official samples disprove the implemented price path and do not document the proposed flexible-date parameters. |
+| TUI Flight Offers | `CONDITIONAL_GO` | Offline prototype only. Current documentation conflicts with the implemented price, cabin, baggage, and standalone deeplink assumptions. |
+| Lufthansa OpenAPI | `BLOCKED` | Registration is on hold, so no new personal account can currently activate it. |
+| Transavia | `BLOCKED` | Public evidence is from a 2018 sample and the current portal/schema could not be verified. |
+| Turkish Airlines | `BLOCKED` | An application review is required and public quota, response, and link details remain insufficient. |
+| Skyscanner | `BLOCKED` | Partnership review and booking-generation expectations do not provide a self-service personal free tier. |
+| Travelpayouts Search API | `NO_GO` | Its rules prohibit combining its results with other metasearch APIs and impose booking conversion requirements. |
+| SerpApi / scraped sources | `NO_GO` | Historical decision before the user explicitly authorized the later constrained experiment. |
+
+Current first-party evidence:
+
+- [Air France–KLM Offers API](https://klmprod.mashery.com/docs/opendata/offers/)
+  and [API-key setup](https://klmprod.mashery.com/docs/read/opendata/Get_Started)
+- [Singapore Airlines Flight Search](https://developer.singaporeair.com/docs/flight_search/flightavailability)
+- [TUI Flight Offers](https://developer.tui/api-catalog/flight-offers/api-description)
+- [Lufthansa registration hold](https://developer.lufthansa.com/)
+- [Skyscanner authentication](https://developers.skyscanner.net/docs/getting-started/authentication)
+  and [usage guidelines](https://developers.skyscanner.net/docs/getting-started/usage-guidelines)
+- [Travelpayouts Search API rules](https://support.travelpayouts.com/hc/en-us/articles/34788165535250-Search-API-usage-rules)
+
+No provider was contacted with a real credential during implementation.
+Fixture-tested support is not proof that an account has production access.
+
+### 2026-09-20 portal update
+
+An additional check of the current Air France–KLM developer portal found that
+the Offers product is marked as available to `Everyone` and explicitly says
+that API usage is free of charge. The product describes ticket availability,
+prices, and completion of booking on the airline website. An application and
+API key are still required, and the current portal did not expose a numeric
+quota in the public product page. The old Mashery documentation remains useful
+for the header and registration flow, but the portal has migrated to
+`developer.airfranceklm.com`.
+
+The same check found that Singapore's free registration/trial is for its test
+environment; production access requires provider approval and contractual
+terms. TUI's current live documentation now describes session initialization
+and redirect-update calls needed before relying on a booking deep link. Turkish
+Airlines documents a 3,000/day sandbox quota while production requires
+consultation/agreement. The current Amadeus developer site states that its
+self-service portal was decommissioned on July 17; enterprise access remains.
+
+These findings make Air France–KLM the best next credentialed validation target,
+not a proven live connection for this installation. The account, key, route,
+response, quota, seller, baggage fields, and booking behavior still need one
+real request before changing the adapter from `trial` to `live`. See the
+[session handoff](handoff-2026-09-20.md) for the comparison table and runtime
+details.
+
+Additional current sources: [AF–KLM Offers overview](https://developer.airfranceklm.com/products/api/offers/docs/overview),
+[AF–KLM product content](https://developer.airfranceklm.com/api/devportal/public/apis/offers/pages/overview/content),
+[Turkish API onboarding](https://developer.apim.turkishairlines.com/howto), and
+[Amadeus developer site](https://developers.amadeus.com/).
+
+## 2026-09-19 baseline decision (historical)
+
+**Status at that time:** `NO_GO` for every live provider under the stricter
+airline-direct-link contract.
 
 ## Method
 
@@ -159,4 +258,6 @@ additional alternatives.
    the repository.
 7. Default to exact dates and enforce monthly/hourly call budgets.
 
-No SerpApi credential or implementation is authorized by this reassessment.
+This historical reassessment did not itself authorize implementation. The
+later 2026-09-20 decision above authorizes only the constrained experiment
+described there.

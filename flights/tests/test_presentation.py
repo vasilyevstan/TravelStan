@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import datetime as dt
 import pathlib
+from dataclasses import replace
+from unittest import mock
 
 from django.test import TestCase
 from django.urls import reverse
 
-from flights.domain import MAX_RESULT_ROWS, SearchMode
+from flights.domain import MAX_RESULT_ROWS, DataStatus, SearchMode
+from flights.providers.base import ProviderNotice, ProviderSearchResult
 from flights.services import run_search
 
-from .factories import NOW, TODAY, make_query
+from .factories import NOW, TODAY, make_offer, make_query
 
 CSS_PATH = (
     pathlib.Path(__file__).resolve().parents[1]
@@ -40,16 +43,17 @@ class ResponsiveCssTests(TestCase):
     def test_default_theme_is_dark(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")
         self.assertIn("color-scheme: dark", css)
-        self.assertIn("--bg: #080d18", css)
-        self.assertIn("--ink: #e7edf7", css)
-        self.assertIn("--focus: #fbbf24", css)
+        self.assertIn("--page: #080b10", css)
+        self.assertIn("--ink: #f2f5f9", css)
+        self.assertIn("--focus: #ffd166", css)
         content = self.client.get(reverse("flights:search")).content.decode()
-        self.assertIn('<meta name="theme-color" content="#080d18">', content)
+        self.assertIn('<meta name="theme-color" content="#080b10">', content)
+        self.assertIn("app.css?v=20260920-dark", content)
 
-    def test_css_is_mobile_first_with_stacked_cards(self) -> None:
+    def test_css_is_mobile_first_with_offer_cards(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")
         self.assertIn("@media", css)
-        self.assertIn("data-label", css)
+        self.assertIn(".offer-card", css)
         self.assertIn("border-radius", css)
         self.assertIn(":focus-visible", css)
         self.assertNotIn("min-width: 321px", css)
@@ -58,7 +62,7 @@ class ResponsiveCssTests(TestCase):
         content = self.client.get(reverse("flights:search")).content.decode()
         self.assertIn('name="viewport"', content)
         results = self.client.post(reverse("flights:search"), _post_payload()).content
-        self.assertIn('data-label="Price"', results.decode())
+        self.assertIn('class="offer-card"', results.decode())
 
 
 class ServiceTests(TestCase):
@@ -74,3 +78,45 @@ class ServiceTests(TestCase):
     def test_search_performs_no_database_queries(self) -> None:
         with self.assertNumQueries(0):
             self.client.post(reverse("flights:search"), _post_payload())
+
+    def test_partial_provider_failure_keeps_successful_results(self) -> None:
+        offer = replace(
+            make_offer(),
+            source="working",
+            data_status=DataStatus.LIVE,
+            is_fictional=False,
+        )
+
+        class WorkingProvider:
+            name = "working"
+            display_name = "Working Air"
+            data_status = DataStatus.LIVE
+            request_cost = 1
+
+            def search(self, query, options, now):  # type: ignore[no-untyped-def]
+                return ProviderSearchResult(
+                    offers=(offer,),
+                    notices=(ProviderNotice(self.name, "Limited inventory."),),
+                    requests_made=4,
+                )
+
+        class FailedProvider:
+            name = "failed"
+            display_name = "Failed Air"
+            data_status = DataStatus.LIVE
+            request_cost = 1
+
+            def search(self, query, options, now):  # type: ignore[no-untyped-def]
+                raise RuntimeError("secret upstream detail")
+
+        with mock.patch(
+            "flights.services.get_providers",
+            return_value=(WorkingProvider(), FailedProvider()),
+        ):
+            outcome = run_search(make_query(), today=TODAY, now=NOW)
+        self.assertEqual(outcome.offers, (offer,))
+        self.assertEqual(outcome.requests_made, 5)
+        messages = [notice.message for notice in outcome.notices]
+        self.assertIn("Limited inventory.", messages)
+        self.assertIn("Failed Air is temporarily unavailable.", messages)
+        self.assertNotIn("secret upstream detail", " ".join(messages))

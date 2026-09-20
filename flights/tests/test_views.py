@@ -5,15 +5,17 @@ from __future__ import annotations
 import datetime as dt
 import logging
 import socket
+from dataclasses import replace
 from unittest import mock
 
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from flights import views
-from flights.services import GENERIC_FAILURE, SearchUnavailable
+from flights.domain import DataStatus
+from flights.services import GENERIC_FAILURE, SearchOutcome, SearchUnavailable
 
-from .factories import NOW, TODAY
+from .factories import NOW, TODAY, make_offer
 
 
 def valid_post(**overrides: object) -> dict[str, object]:
@@ -51,7 +53,8 @@ class ViewTests(TestCase):
 
     def test_get_shows_fixed_single_adult(self) -> None:
         content = self.client.get(self.url).content.decode()
-        self.assertIn("1 adult (fixed for this demo)", content)
+        self.assertIn("1 adult", content)
+        self.assertIn('<details class="advanced" open>', content)
 
     def test_csrf_is_enforced(self) -> None:
         enforcing = Client(enforce_csrf_checks=True)
@@ -62,28 +65,19 @@ class ViewTests(TestCase):
         response = self.client.post(self.url, valid_post())
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertIn("fictional", content)
-        self.assertIn("non-live", content)
-        self.assertIn("non-bookable", content)
-        self.assertIn("synthetic_demo", content)
-        self.assertIn("Fictional demo price", content)
-        self.assertIn("No seller", content)
+        self.assertIn("Sample results", content)
+        self.assertIn("Prices are generated and cannot be booked", content)
+        self.assertIn("Generated itinerary", content)
+        self.assertIn("data-badge--synthetic", content)
+        self.assertIn("Booking link unavailable", content)
 
-    def test_results_table_has_all_frozen_columns(self) -> None:
+    def test_results_use_compact_offer_cards(self) -> None:
         content = self.client.post(self.url, valid_post()).content.decode()
-        for header in (
-            "Carrier",
-            "Route and schedule",
-            "Duration and stops",
-            "Cabin and fare",
-            "Baggage",
-            "Price",
-            "Source and freshness",
-            "Seller and purchase",
-        ):
-            self.assertIn(f'<th scope="col">{header}</th>', content)
-        self.assertIn("Retrieved:", content)
-        self.assertIn("Valid until:", content)
+        self.assertIn('class="offer-card"', content)
+        self.assertIn('aria-label="Outbound flight"', content)
+        self.assertIn('aria-label="Price and booking"', content)
+        self.assertIn("Total for 1 adult", content)
+        self.assertIn("Baggage details", content)
 
     def test_results_show_four_baggage_slots(self) -> None:
         content = self.client.post(self.url, valid_post()).content.decode()
@@ -94,15 +88,56 @@ class ViewTests(TestCase):
         content = self.client.post(self.url, valid_post()).content.decode()
         self.assertNotIn("http://", content)
         self.assertNotIn("https://", content)
-        for cta in ("Book now", "Buy", "Select flight", "Continue to seller"):
-            self.assertNotIn(cta, content)
+        self.assertNotIn('class="booking-button"', content)
+
+    @override_settings(TRAVELSTAN_PROVIDERS=("afkl",), AFKL_API_KEY="test")
+    def test_safe_live_booking_link_is_rendered_as_external_action(self) -> None:
+        offer = replace(
+            make_offer(),
+            source="afkl",
+            data_status=DataStatus.LIVE,
+            seller_name="Air France–KLM",
+            purchase_url="https://www.klm.com/book/test",
+            is_bookable=True,
+            is_fictional=False,
+        )
+        outcome = SearchOutcome(
+            offers=(offer,),
+            retrieved_at=NOW,
+            expires_at=offer.expires_at,
+            sources=("afkl",),
+            notices=(),
+            requests_made=1,
+        )
+        with mock.patch("flights.views.run_search", return_value=outcome):
+            content = self.client.post(self.url, valid_post()).content.decode()
+        self.assertIn('href="https://www.klm.com/book/test"', content)
+        self.assertIn('target="_blank" rel="noopener noreferrer"', content)
+        self.assertIn("Continue to Air France–KLM", content)
+
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="do-not-render",
+    )
+    def test_serpapi_mode_discloses_experimental_source_and_retention(self) -> None:
+        content = self.client.get(self.url).content.decode()
+        self.assertIn("Experimental live-source comparison", content)
+        self.assertIn("scrapes Google Flights", content)
+        self.assertIn("retain ordinary searches for up to 31 days", content)
+        self.assertIn(
+            "Checked-bag filtering and booking links are unavailable",
+            content,
+        )
+        self.assertIn("TravelStan does not store searches or results", content)
+        self.assertIn("SerpApi's disclosed retention may still apply", content)
+        self.assertNotIn("do-not-render", content)
 
     def test_results_capped_at_ten_rows(self) -> None:
         response = self.client.post(
             self.url, valid_post(mode="flexible", flexibility="7")
         )
         content = response.content.decode()
-        self.assertLessEqual(content.count('<th scope="row"'), 10)
+        self.assertLessEqual(content.count('<article class="offer-card">'), 10)
         self.assertEqual(len(response.context["offers"]), 10)
 
     def test_checked_bag_requirement_filters_results(self) -> None:
@@ -133,11 +168,11 @@ class ViewTests(TestCase):
 
     def test_one_way_and_round_trip_render(self) -> None:
         one_way = self.client.post(self.url, valid_post()).content.decode()
-        self.assertIn("One-way", one_way)
+        self.assertNotIn('aria-label="Return flight"', one_way)
         round_trip = self.client.post(
             self.url, valid_post(return_date="2026-10-08")
         ).content.decode()
-        self.assertIn("Return", round_trip)
+        self.assertIn('aria-label="Return flight"', round_trip)
 
     def test_injected_today_controls_departure_validation(self) -> None:
         with mock.patch(
@@ -159,11 +194,10 @@ class ViewTests(TestCase):
 
     def test_accessible_semantics(self) -> None:
         content = self.client.post(self.url, valid_post()).content.decode()
-        self.assertIn("<fieldset>", content)
-        self.assertIn("<legend>", content)
-        self.assertIn("<caption>", content)
-        self.assertIn('scope="col"', content)
-        self.assertIn('scope="row"', content)
+        self.assertIn("<fieldset", content)
+        self.assertIn("<legend", content)
+        self.assertIn("<article", content)
+        self.assertIn('aria-label="Outbound flight"', content)
         self.assertIn('role="status"', content)
         self.assertIn('<html lang="en">', content)
         self.assertIn("<label ", content)

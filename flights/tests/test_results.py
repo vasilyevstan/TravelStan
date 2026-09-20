@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+from decimal import Decimal
+
 from django.test import SimpleTestCase
 
-from flights.domain import BaggageState, LuggageChoice
+from flights.domain import BaggageAllowance, BaggageSlot, BaggageState, LuggageChoice
 from flights.results import build_results, deduplicate, sort_offers
 
 from .factories import make_baggage, make_offer, make_query
@@ -47,6 +50,38 @@ class ResultsTests(SimpleTestCase):
         distinct = make_offer("third", flight_number="ZQ2002")
         unique = deduplicate((first, duplicate, distinct))
         self.assertEqual([offer.offer_id for offer in unique], ["first", "third"])
+
+    def test_build_results_sorts_before_first_wins_dedupe(self) -> None:
+        later_sort_key = make_offer("z-last")
+        earlier_sort_key = make_offer("a-first")
+        results = build_results((later_sort_key, earlier_sort_key), make_query())
+        self.assertEqual([offer.offer_id for offer in results], ["a-first"])
+
+    def test_binding_ancillary_and_weight_participate_in_identity(self) -> None:
+        base = make_offer("base")
+        priced_extra = BaggageAllowance(
+            slot=BaggageSlot.EXTRA_PAID_BAG,
+            state=BaggageState.NOT_INCLUDED,
+            quantity=1,
+            price_amount=Decimal("35.00"),
+            price_currency="EUR",
+            price_is_binding=True,
+            price_scope="per bag",
+            weight_amount=Decimal("23"),
+            weight_unit="kg",
+        )
+        changed_extra = replace(priced_extra, price_amount=Decimal("45.00"))
+        first = replace(
+            base,
+            baggage=replace(base.baggage, extra_paid_bag=priced_extra),
+        )
+        second = replace(
+            base,
+            offer_id="other",
+            baggage=replace(base.baggage, extra_paid_bag=changed_extra),
+        )
+        self.assertNotEqual(first.identity(), second.identity())
+        self.assertEqual(priced_extra.weight_label, "23 kg")
 
     def test_sort_by_amount_currency_duration_then_offer_id(self) -> None:
         offers = (
