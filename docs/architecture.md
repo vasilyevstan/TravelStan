@@ -52,9 +52,9 @@ only in provider authentication headers. CSRF, template autoescaping, redacted
 errors, URL allowlists, response-size bounds, and safe external-link attributes
 remain enforced.
 
-The interface uses a light editorial layout, native labelled controls, a
-compact advanced-options disclosure, accessible errors and status messages,
-and responsive offer cards down to 320px. It works without JavaScript.
+The interface uses a compact dark layout, native labelled controls, an
+advanced-options disclosure, accessible errors and status messages, and
+responsive offer cards down to 320px. It works without JavaScript.
 
 Tests and CI use deterministic fixtures and `httpx.MockTransport`; they never
 contact provider endpoints or require credentials.

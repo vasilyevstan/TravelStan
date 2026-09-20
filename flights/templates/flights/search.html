@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f4ef">
+  <meta name="theme-color" content="#080b10">
   <title>TravelStan — personal flight comparison</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'flights/css/app.css' %}">
@@ -18,22 +18,22 @@
         <span>TravelStan</span>
       </a>
       <div class="provider-summary" aria-label="Configured data sources">
-        {% if synthetic_mode %}<span class="status-dot status-dot--demo"></span>Demo data{% else %}<span class="status-dot"></span>{{ provider_names|join:", " }}{% endif %}
+        {% if synthetic_mode %}<span class="status-dot status-dot--demo"></span>Sample data{% else %}<span class="status-dot"></span>{{ provider_names|join:", " }}{% endif %}
       </div>
     </div>
 
     <div class="hero">
-      <p class="eyebrow">Personal flight search</p>
-      <h1>Find the flight that fits.</h1>
-      <p class="hero-copy">Compare schedules, fares, and baggage without the noise.</p>
+      <p class="eyebrow">Flight comparison</p>
+      <h1>Find your flight.</h1>
+      <p class="hero-copy">Compare schedules, fares, and baggage in one clear view.</p>
     </div>
   </header>
 
   <main id="main">
     {% if synthetic_mode %}
       <aside class="source-note source-note--demo" role="note">
-        <strong>Demo mode.</strong> Results are fictional, non-live, and non-bookable.
-        Add a supported provider key to search external airline data.
+        <span class="source-note-icon" aria-hidden="true">i</span>
+        <span><strong>Sample results.</strong> Prices are generated and cannot be booked. Connect an airline API key for live availability.</span>
       </aside>
     {% endif %}
 
@@ -160,7 +160,7 @@
             </h2>
           </div>
           {% if outcome %}
-            <p class="results-meta">{{ outcome.requests_made }} provider request{{ outcome.requests_made|pluralize }} · {{ outcome.source }}</p>
+            <p class="results-meta">{% if synthetic_mode %}Generated locally · no live request{% else %}{{ outcome.requests_made }} provider request{{ outcome.requests_made|pluralize }} · {{ provider_names|join:", " }}{% endif %}</p>
           {% endif %}
         </div>
 
@@ -181,8 +181,8 @@
                 <div class="offer-main">
                   <header class="offer-header">
                     <div>
-                      <span class="data-badge data-badge--{{ offer.data_status }}">{{ offer.status_label }}</span>
-                      <strong class="source-name">{% if offer.source == "synthetic_demo" %}TravelStan demo{% else %}{{ offer.seller_name|default:offer.source }}{% endif %}</strong>
+                      <span class="data-badge data-badge--{{ offer.data_status }}">{% if offer.source == "synthetic_demo" %}Sample{% else %}{{ offer.status_label }}{% endif %}</span>
+                      <strong class="source-name">{% if offer.source == "synthetic_demo" %}Generated itinerary{% else %}{{ offer.seller_name|default:offer.source }}{% endif %}</strong>
                     </div>
                     <span class="fare-label">{{ offer.cabin_label }} · {{ offer.fare_brand }}</span>
                   </header>

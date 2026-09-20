@@ -23,7 +23,7 @@ must not make real provider calls or require provider credentials.
 | `flights/tests/test_provider.py` | Synthetic determinism, no-network operation, provider registry configuration, key requirements, and synthetic/live separation. |
 | `flights/tests/test_provider_adapters.py` | Mocked AF–KLM, Singapore, and TUI request/response contracts, one-call budgets, status labels, safe links, baggage mapping, and no retry. |
 | `flights/tests/test_views.py` | POST/CSRF flow, honest source labelling, accessible offer cards, redacted failures, no-JavaScript rendering, and no persistence/session/cache/log capture. |
-| `flights/tests/test_presentation.py` | Light responsive card CSS, viewport metadata, service-level result assembly, and zero database queries per search. |
+| `flights/tests/test_presentation.py` | Dark responsive card CSS, viewport metadata, service-level result assembly, and zero database queries per search. |
 
 Time is injected (`flights/clock.py`, `SearchForm(today=...)`,
 `views.search(today_provider=..., now_provider=...)`), so no test depends on

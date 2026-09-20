@@ -40,14 +40,14 @@ def _post_payload() -> dict[str, str]:
 
 
 class ResponsiveCssTests(TestCase):
-    def test_default_theme_is_light_editorial(self) -> None:
+    def test_default_theme_is_dark(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")
-        self.assertIn("color-scheme: light", css)
-        self.assertIn("--page: #f5f4ef", css)
-        self.assertIn("--ink: #17211f", css)
-        self.assertIn("--focus: #ee9e2e", css)
+        self.assertIn("color-scheme: dark", css)
+        self.assertIn("--page: #080b10", css)
+        self.assertIn("--ink: #f2f5f9", css)
+        self.assertIn("--focus: #ffd166", css)
         content = self.client.get(reverse("flights:search")).content.decode()
-        self.assertIn('<meta name="theme-color" content="#f5f4ef">', content)
+        self.assertIn('<meta name="theme-color" content="#080b10">', content)
 
     def test_css_is_mobile_first_with_offer_cards(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")

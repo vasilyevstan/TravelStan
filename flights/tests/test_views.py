@@ -65,10 +65,9 @@ class ViewTests(TestCase):
         response = self.client.post(self.url, valid_post())
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
-        self.assertIn("fictional", content)
-        self.assertIn("non-live", content)
-        self.assertIn("non-bookable", content)
-        self.assertIn("TravelStan demo", content)
+        self.assertIn("Sample results", content)
+        self.assertIn("Prices are generated and cannot be booked", content)
+        self.assertIn("Generated itinerary", content)
         self.assertIn("data-badge--synthetic", content)
         self.assertIn("Booking link unavailable", content)
 
