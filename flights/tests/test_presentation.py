@@ -48,6 +48,7 @@ class ResponsiveCssTests(TestCase):
         self.assertIn("--focus: #ffd166", css)
         content = self.client.get(reverse("flights:search")).content.decode()
         self.assertIn('<meta name="theme-color" content="#080b10">', content)
+        self.assertIn("app.css?v=20260920-dark", content)
 
     def test_css_is_mobile_first_with_offer_cards(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")

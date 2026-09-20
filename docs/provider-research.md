@@ -38,6 +38,37 @@ Current first-party evidence:
 No provider was contacted with a real credential during implementation.
 Fixture-tested support is not proof that an account has production access.
 
+### 2026-09-20 portal update
+
+An additional check of the current Air France–KLM developer portal found that
+the Offers product is marked as available to `Everyone` and explicitly says
+that API usage is free of charge. The product describes ticket availability,
+prices, and completion of booking on the airline website. An application and
+API key are still required, and the current portal did not expose a numeric
+quota in the public product page. The old Mashery documentation remains useful
+for the header and registration flow, but the portal has migrated to
+`developer.airfranceklm.com`.
+
+The same check found that Singapore's free registration/trial is for its test
+environment; production access requires provider approval and contractual
+terms. TUI's current live documentation now describes session initialization
+and redirect-update calls needed before relying on a booking deep link. Turkish
+Airlines documents a 3,000/day sandbox quota while production requires
+consultation/agreement. The current Amadeus developer site states that its
+self-service portal was decommissioned on July 17; enterprise access remains.
+
+These findings make Air France–KLM the best next credentialed validation target,
+not a proven live connection for this installation. The account, key, route,
+response, quota, seller, baggage fields, and booking behavior still need one
+real request before changing the adapter from `trial` to `live`. See the
+[session handoff](handoff-2026-09-20.md) for the comparison table and runtime
+details.
+
+Additional current sources: [AF–KLM Offers overview](https://developer.airfranceklm.com/products/api/offers/docs/overview),
+[AF–KLM product content](https://developer.airfranceklm.com/api/devportal/public/apis/offers/pages/overview/content),
+[Turkish API onboarding](https://developer.apim.turkishairlines.com/howto), and
+[Amadeus developer site](https://developers.amadeus.com/).
+
 ## 2026-09-19 baseline decision (historical)
 
 **Status at that time:** `NO_GO` for every live provider under the stricter
