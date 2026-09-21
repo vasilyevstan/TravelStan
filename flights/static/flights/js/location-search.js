@@ -176,6 +176,7 @@
       requestGeneration += 1;
       controller?.abort();
       controller = undefined;
+      clearTimeout(debounceTimer);
       window.setTimeout(close, 100);
     });
   });
