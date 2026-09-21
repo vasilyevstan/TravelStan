@@ -23,7 +23,7 @@ must not make real provider calls or require provider credentials.
 | `flights/tests/test_results.py` | Four-slot baggage, checked-required filtering, ancillary/weight identity, sort-before-dedupe, and the ten-card cap. |
 | `flights/tests/test_provider.py` | Synthetic determinism, no-network operation, SerpApi registry configuration, key requirements, synthetic/external separation, and rejection of unverified direct adapters. |
 | `flights/tests/test_provider_adapters.py` | Offline prototype fixtures for AF–KLM, Singapore, and TUI. Passing fixtures do not establish compatibility with current official schemas. |
-| `flights/tests/test_serpapi.py` | Mocked exact and `±1` flows, city airport-set routing, request caps, route integrity, unknown baggage, omitted booking links, zero-call limitations, and secret-safe errors. |
+| `flights/tests/test_serpapi.py` | Mocked exact and `±1` flows, partial flexible-date failures, all-pairs-failed behavior, city airport-set routing, request caps, route integrity, unknown baggage, omitted booking links, zero-call limitations, and secret-safe errors. |
 | `flights/tests/test_views.py` | Search and location-lookup CSRF, honest source labelling, normalized location JSON, city labels, accessible offer cards, redacted failures, and no persistence/session/cache/log capture. |
 | `flights/tests/test_presentation.py` | Lightweight responsive CSS, stable advanced-options layout, accessible location combobox markup, viewport metadata, result assembly, and zero database queries per search. |
 

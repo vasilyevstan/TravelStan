@@ -357,6 +357,88 @@ class SerpApiProviderTests(SimpleTestCase):
             },
         )
 
+    def test_flexible_round_trip_keeps_successful_date_pairs(self) -> None:
+        requests: list[httpx.Request] = []
+        failed_date = "2026-10-01"
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            outbound_date = request.url.params["outbound_date"]
+            return_date = request.url.params["return_date"]
+            if request.url.params.get("departure_token"):
+                if outbound_date == failed_date:
+                    return httpx.Response(504, json={"error": "temporary"})
+                return httpx.Response(
+                    200,
+                    json={
+                        "best_flights": [
+                            _option(
+                                origin="BBB",
+                                destination="AAA",
+                                departure=f"{return_date} 12:00",
+                                arrival=f"{return_date} 14:00",
+                                number="EA 202",
+                                price=220,
+                            )
+                        ]
+                    },
+                )
+            return httpx.Response(
+                200,
+                json={
+                    "best_flights": [
+                        _option(
+                            departure=f"{outbound_date} 08:00",
+                            arrival=f"{outbound_date} 10:00",
+                            departure_token=f"token-{outbound_date}",
+                        )
+                    ]
+                },
+            )
+
+        provider = SerpApiProvider("key", transport=httpx.MockTransport(handler))
+        query = make_query(
+            cabin=CabinClass.ECONOMY,
+            mode=SearchMode.FLEXIBLE,
+            flexibility=1,
+            return_date=dt.date(2026, 10, 8),
+        )
+        result = provider.search(query, plan_date_options(query, TODAY), NOW)
+
+        self.assertEqual(result.requests_made, MAX_REQUESTS_PER_SEARCH)
+        self.assertEqual(len(requests), MAX_REQUESTS_PER_SEARCH)
+        self.assertEqual(len(result.offers), 2)
+        self.assertEqual(
+            {offer.outbound.departure.date() for offer in result.offers},
+            {dt.date(2026, 9, 30), dt.date(2026, 10, 2)},
+        )
+        self.assertTrue(
+            any(
+                "only date pairs the provider completed" in notice.message
+                for notice in result.notices
+            )
+        )
+
+    def test_flexible_search_fails_when_every_date_pair_is_unavailable(self) -> None:
+        calls = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal calls
+            calls += 1
+            return httpx.Response(503, json={"error": "temporary"})
+
+        provider = SerpApiProvider("key", transport=httpx.MockTransport(handler))
+        query = make_query(
+            cabin=CabinClass.ECONOMY,
+            mode=SearchMode.FLEXIBLE,
+            flexibility=1,
+            return_date=dt.date(2026, 10, 8),
+        )
+
+        with self.assertRaises(ProviderError):
+            provider.search(query, plan_date_options(query, TODAY), NOW)
+        self.assertEqual(calls, 3)
+
     def test_unsupported_queries_fail_closed_without_network(self) -> None:
         calls = 0
 
