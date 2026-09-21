@@ -5,15 +5,21 @@
 **Revised:** 2026-09-20
 
 TravelStan is a Python 3.13/Django 5.2 modular monolith with server-rendered
-templates, vanilla CSS, and no required JavaScript. The default
-`synthetic_demo` mode is deterministic and offline. The only selectable
-external provider is the explicitly approved personal SerpApi experiment.
-Synthetic and external results can never be mixed or used as fallback for one
-another.
+templates, vanilla CSS, and a small progressive-enhancement script for
+provider-backed city/airport selection. Direct IATA entry and the complete
+search flow remain server-rendered. The default `synthetic_demo` mode is
+deterministic and offline. The only selectable external provider is the
+explicitly approved personal SerpApi experiment. Synthetic and external
+results can never be mixed or used as fallback for one another.
 
 ## Search and provider boundary
 
-- One adult; upper-case three-character IATA airport codes; one-way or return.
+- One adult; direct upper-case three-character IATA codes or a selected
+  SerpApi city/airport suggestion; one-way or return.
+- An all-airports city suggestion uses SerpApi's documented location KGMID;
+  the returned airport-code list is retained only to validate result endpoints
+  and reject overlapping origin/destination choices. A specific-airport choice
+  uses its IATA code directly.
 - Exact dates or joint outbound/return flexibility of one to seven days.
 - Economy, Economy+ / Premium Economy, Business, or all supported classes.
 - An explicit checked-bag requirement keeps only offers with a known positive,
@@ -59,9 +65,20 @@ Other adapters use provider authentication headers. CSRF, template
 autoescaping, redacted errors, URL allowlists, response-size bounds, and safe
 external-link attributes remain enforced.
 
-The interface uses a compact dark layout, native labelled controls, an
-advanced-options disclosure, accessible errors and status messages, and
-responsive offer cards down to 320px. It works without JavaScript.
+The location lookup is a CSRF-protected POST so location text is not placed in
+application URLs. It requires two characters, returns at most ten normalized
+options, and relies on SerpApi's one-hour provider cache rather than retaining
+queries locally. The browser debounces requests, immediately cancels
+superseded work, keeps only page-memory results, and caps each loaded page at
+12 lookups. A process-local budget additionally permits at most 20 lookup
+requests per minute and 100 for the process lifetime; it stores only monotonic
+timestamps and a count, not query or user data.
+
+The interface uses a lightweight dark layout, native labelled controls, an
+advanced-options disclosure whose position does not change when expanded,
+accessible combobox keyboard controls and status messages, and responsive
+offer cards down to 320px. Without JavaScript, direct IATA entry remains
+available.
 
 Tests and CI use deterministic fixtures and `httpx.MockTransport`; they never
 contact provider endpoints or require credentials.

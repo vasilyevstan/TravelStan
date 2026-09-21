@@ -21,9 +21,14 @@ from .domain import (
 )
 
 IATA_RE = re.compile(IATA_PATTERN)
+LOCATION_ID_RE = re.compile(r"^(?:[A-Z]{3}|/[mg]/[A-Za-z0-9_-]+)$")
+LOCATION_SET_RE = re.compile(r"^[A-Z]{3}(?:,[A-Z]{3}){0,19}$")
 
-ERROR_IATA = "Enter a three-letter airport code."
-ERROR_SAME_AIRPORT = "Origin and destination must be different airports."
+ERROR_LOCATION = (
+    "Choose a city or airport from the suggestions, or enter a three-letter "
+    "airport code."
+)
+ERROR_SAME_AIRPORT = "Origin and destination must not include the same airport."
 ERROR_DEPARTURE_PAST = "Departure date must be later than today."
 ERROR_RETURN_ORDER = "Return date must be later than the departure date."
 ERROR_FLEX_RANGE = "Choose a flexibility between 1 and 7 days."
@@ -63,15 +68,19 @@ class BlankFriendlyDateField(forms.DateField):
 
 class SearchForm(forms.Form):
     origin = forms.CharField(
-        label="From (airport code)",
-        max_length=3,
-        error_messages={"required": ERROR_REQUIRED, "max_length": ERROR_IATA},
+        label="From",
+        max_length=100,
+        error_messages={"required": ERROR_REQUIRED, "max_length": ERROR_LOCATION},
     )
+    origin_id = forms.CharField(required=False, max_length=100)
+    origin_airports = forms.CharField(required=False, max_length=79)
     destination = forms.CharField(
-        label="To (airport code)",
-        max_length=3,
-        error_messages={"required": ERROR_REQUIRED, "max_length": ERROR_IATA},
+        label="To",
+        max_length=100,
+        error_messages={"required": ERROR_REQUIRED, "max_length": ERROR_LOCATION},
     )
+    destination_id = forms.CharField(required=False, max_length=100)
+    destination_airports = forms.CharField(required=False, max_length=79)
     departure_date = BlankFriendlyDateField(
         label="Departure date",
         widget=forms.DateInput(attrs={"type": "date"}),
@@ -114,21 +123,16 @@ class SearchForm(forms.Form):
         error_messages={"required": ERROR_REQUIRED, "invalid_choice": ERROR_CHOICE},
     )
 
-    def __init__(self, *args: object, today: dt.date, **kwargs: object) -> None:
+    def __init__(
+        self,
+        *args: object,
+        today: dt.date,
+        allow_location_sets: bool = False,
+        **kwargs: object,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.today = today
-
-    def _clean_iata(self, value: str) -> str:
-        code = (value or "").strip().upper()
-        if not IATA_RE.match(code):
-            raise forms.ValidationError(ERROR_IATA)
-        return code
-
-    def clean_origin(self) -> str:
-        return self._clean_iata(self.cleaned_data["origin"])
-
-    def clean_destination(self) -> str:
-        return self._clean_iata(self.cleaned_data["destination"])
+        self.allow_location_sets = allow_location_sets
 
     def clean_departure_date(self) -> dt.date:
         departure = self.cleaned_data["departure_date"]
@@ -138,9 +142,39 @@ class SearchForm(forms.Form):
 
     def clean(self) -> dict[str, object]:
         cleaned = super().clean()
-        origin = cleaned.get("origin")
-        destination = cleaned.get("destination")
-        if origin and destination and origin == destination:
+        for field_name in ("origin", "destination"):
+            raw_value = str(cleaned.get(field_name) or "").strip()
+            direct_code = raw_value.upper()
+            selected_value = str(cleaned.get(f"{field_name}_id") or "").strip()
+            selected_airports = (
+                str(cleaned.get(f"{field_name}_airports") or "").strip().upper()
+            )
+            if IATA_RE.fullmatch(direct_code):
+                identifier = direct_code
+                label = direct_code
+                airports = (direct_code,)
+            elif (
+                self.allow_location_sets
+                and LOCATION_ID_RE.fullmatch(selected_value)
+                and LOCATION_SET_RE.fullmatch(selected_airports)
+            ):
+                identifier = selected_value
+                label = raw_value
+                airports = tuple(dict.fromkeys(selected_airports.split(",")))
+                if IATA_RE.fullmatch(identifier) and identifier not in airports:
+                    self.add_error(field_name, ERROR_LOCATION)
+                    continue
+            else:
+                if field_name in cleaned:
+                    self.add_error(field_name, ERROR_LOCATION)
+                continue
+            cleaned[field_name] = identifier
+            cleaned[f"{field_name}_label"] = label
+            cleaned[f"{field_name}_airports"] = airports
+
+        origin = cleaned.get("origin_airports")
+        destination = cleaned.get("destination_airports")
+        if origin and destination and set(origin) & set(destination):
             self.add_error("destination", ERROR_SAME_AIRPORT)
 
         departure = cleaned.get("departure_date")
@@ -169,4 +203,8 @@ class SearchForm(forms.Form):
             flexibility=int(data["flexibility"] or 0),
             luggage=LuggageChoice(data["luggage"]),
             adults=1,
+            origin_label=data["origin_label"],
+            destination_label=data["destination_label"],
+            origin_airports=data["origin_airports"],
+            destination_airports=data["destination_airports"],
         )

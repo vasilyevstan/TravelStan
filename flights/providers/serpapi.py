@@ -231,7 +231,11 @@ class SerpApiProvider:
         query: SearchQuery,
         now: dt.datetime,
     ) -> Offer | None:
-        outbound = self._map_itinerary(raw, query.origin, query.destination)
+        outbound = self._map_itinerary(
+            raw,
+            query.allowed_origin_airports,
+            query.allowed_destination_airports,
+        )
         return self._offer(raw, outbound, None, query, now)
 
     def _map_round_trip(
@@ -243,13 +247,13 @@ class SerpApiProvider:
     ) -> Offer | None:
         outbound = self._map_itinerary(
             raw_outbound,
-            query.origin,
-            query.destination,
+            query.allowed_origin_airports,
+            query.allowed_destination_airports,
         )
         inbound = self._map_itinerary(
             raw_inbound,
-            query.destination,
-            query.origin,
+            query.allowed_destination_airports,
+            query.allowed_origin_airports,
         )
         return self._offer(raw_inbound, outbound, inbound, query, now)
 
@@ -300,8 +304,8 @@ class SerpApiProvider:
     def _map_itinerary(
         self,
         raw: Mapping[str, Any],
-        expected_origin: str,
-        expected_destination: str,
+        expected_origins: tuple[str, ...],
+        expected_destinations: tuple[str, ...],
     ) -> Itinerary | None:
         raw_flights = as_list(raw.get("flights"))
         if not raw_flights:
@@ -349,8 +353,8 @@ class SerpApiProvider:
                 )
             )
         if (
-            segments[0].origin != expected_origin
-            or segments[-1].destination != expected_destination
+            segments[0].origin not in expected_origins
+            or segments[-1].destination not in expected_destinations
             or any(
                 current.destination != following.origin
                 for current, following in zip(segments, segments[1:], strict=False)
