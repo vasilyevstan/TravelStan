@@ -46,6 +46,16 @@ data, credentials, source code, or domain rules from other projects.
   by accepting a scraping intermediary. The adapter must remain visibly
   experimental, omit unproved checked-bag and airline-direct claims, use no
   synthetic fallback, and enforce a six-request per-search ceiling.
+- SerpApi's official Google Flights Autocomplete API can provide the city to
+  airport relationship without inventing a local location database. Preserve
+  direct IATA fallback, use the documented city KGMID for an all-airports
+  search, expose specific-airport choices, validate returned endpoints against
+  the suggestion's airport set, allowlist the credential-bearing endpoint,
+  enforce both browser and server lookup limits, and disclose that
+  autocomplete adds provider requests and retention.
+- A disclosure control must keep the same layout position when opened and
+  closed. Let its content expand below a stable full-width summary instead of
+  moving the summary between flex alignment states.
 - Fixture tests exposed why provider samples must be matched exactly:
   Singapore's official total is under `fareSummary.fareTotal.totalAmount`, and
   TUI documents `prices.totalPrice` plus a multi-step booking-link flow.
