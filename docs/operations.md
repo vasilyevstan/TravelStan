@@ -44,8 +44,10 @@ exception causes that could retain it.
 - Flexible mode is limited to `±1`; a round-trip uses at most six requests.
 - All classes, checked-bag-required, and wider flexible searches make zero
   requests and return an explicit limitation notice.
-- Calls use the shared timeout and no retry. Total failure produces one
-  redacted error and never synthetic data.
+- Calls use the shared timeout and no retry. Flexible searches keep successful
+  independent date pairs when another pair has a transient provider failure
+  and disclose the partial coverage. If every pair fails, the search produces
+  one redacted error and never synthetic data.
 - `no_cache=true` is sent for fare freshness, so successful flight calls count
   toward the plan. Autocomplete intentionally allows SerpApi's one-hour cache,
   where cached repeats are documented as free. Twenty maximum-budget flight
