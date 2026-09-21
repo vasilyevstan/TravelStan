@@ -101,14 +101,23 @@ class SerpApiProvider:
             return payload
 
         offers: list[Offer] = []
+        completed_options = 0
+        partial_failures = 0
         selected_options = (
             options[:3] if query.mode is SearchMode.FLEXIBLE else options[:1]
         )
         for option in selected_options:
             params = self._params(query, option)
-            outbound_payload = fetch(params)
+            try:
+                outbound_payload = fetch(params)
+            except ProviderError:
+                if query.mode is not SearchMode.FLEXIBLE:
+                    raise
+                partial_failures += 1
+                continue
             outbound_options = self._flight_options(outbound_payload)
             if query.is_one_way:
+                completed_options += 1
                 offers.extend(
                     offer
                     for raw in outbound_options
@@ -122,17 +131,37 @@ class SerpApiProvider:
             selectable_outbounds = tuple(
                 raw for raw in outbound_options if first_value(raw, "departure_token")
             )
+            if not selectable_outbounds:
+                completed_options += 1
+                continue
+            option_completed = False
             for raw_outbound in selectable_outbounds[:branch_limit]:
                 departure_token = first_value(raw_outbound, "departure_token")
-                return_payload = fetch(
-                    {**params, "departure_token": str(departure_token)}
-                )
+                try:
+                    return_payload = fetch(
+                        {**params, "departure_token": str(departure_token)}
+                    )
+                except ProviderError:
+                    if query.mode is not SearchMode.FLEXIBLE:
+                        raise
+                    partial_failures += 1
+                    continue
+                option_completed = True
                 for raw_inbound in self._flight_options(return_payload)[
                     :MAX_RETURN_OPTIONS
                 ]:
                     offer = self._map_round_trip(raw_outbound, raw_inbound, query, now)
                     if offer is not None:
                         offers.append(offer)
+            if option_completed:
+                completed_options += 1
+
+        if (
+            query.mode is SearchMode.FLEXIBLE
+            and partial_failures
+            and completed_options == 0
+        ):
+            raise ProviderError("Provider request failed.")
 
         notices = [
             ProviderNotice(
@@ -153,6 +182,14 @@ class SerpApiProvider:
                     self.name,
                     "The experiment searched only the requested ±1 joint date "
                     "window and followed one outbound branch per date pair.",
+                )
+            )
+        if partial_failures:
+            notices.append(
+                ProviderNotice(
+                    self.name,
+                    "Some flexible-date requests were unavailable. Results cover "
+                    "only date pairs the provider completed.",
                 )
             )
         return ProviderSearchResult(
