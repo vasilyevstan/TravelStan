@@ -15,6 +15,7 @@
     const status = document.getElementById(input.dataset.locationStatus);
     let debounceTimer;
     let controller;
+    let requestGeneration = 0;
     let activeIndex = -1;
     let currentSuggestions = [];
 
@@ -98,8 +99,9 @@
         return;
       }
 
-      controller?.abort();
-      controller = new AbortController();
+      const generation = requestGeneration;
+      const requestController = new AbortController();
+      controller = requestController;
       requestCount += 1;
       status.textContent = "Looking up cities and airports.";
       try {
@@ -111,17 +113,30 @@
             "X-CSRFToken": csrfToken,
           },
           body: new URLSearchParams({ q: query }),
-          signal: controller.signal,
+          signal: requestController.signal,
         });
         if (!response.ok) throw new Error("Location lookup failed.");
         const payload = await response.json();
+        if (
+          generation !== requestGeneration ||
+          controller !== requestController ||
+          input.value.trim() !== query
+        ) {
+          return;
+        }
         const suggestions = Array.isArray(payload.suggestions)
           ? payload.suggestions
           : [];
         cache.set(cacheKey, suggestions);
         render(suggestions);
       } catch (error) {
-        if (error.name === "AbortError") return;
+        if (
+          error.name === "AbortError" ||
+          generation !== requestGeneration ||
+          controller !== requestController
+        ) {
+          return;
+        }
         close();
         status.textContent =
           "Location lookup is unavailable. Enter a 3-letter airport code.";
@@ -129,6 +144,7 @@
     };
 
     input.addEventListener("input", () => {
+      requestGeneration += 1;
       controller?.abort();
       controller = undefined;
       hidden.value = "";
@@ -157,6 +173,9 @@
     });
 
     input.addEventListener("blur", () => {
+      requestGeneration += 1;
+      controller?.abort();
+      controller = undefined;
       window.setTimeout(close, 100);
     });
   });

@@ -86,6 +86,8 @@ class ResponsiveCssTests(TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("choice.tabIndex = -1", script)
         self.assertIn("controller?.abort()", script)
+        self.assertIn("generation !== requestGeneration", script)
+        self.assertIn("controller !== requestController", script)
 
     def test_viewport_meta_and_card_labels_present(self) -> None:
         content = self.client.get(reverse("flights:search")).content.decode()
