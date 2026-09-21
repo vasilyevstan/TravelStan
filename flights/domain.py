@@ -330,6 +330,8 @@ class SearchQuery:
     flexibility: int
     luggage: LuggageChoice
     adults: int = 1
+    origin_label: str | None = None
+    destination_label: str | None = None
 
     @property
     def is_one_way(self) -> bool:
@@ -338,6 +340,14 @@ class SearchQuery:
     @property
     def requires_checked_bag(self) -> bool:
         return self.luggage is LuggageChoice.CHECKED_REQUIRED
+
+    @property
+    def origin_display(self) -> str:
+        return self.origin_label or self.origin.replace(",", ", ")
+
+    @property
+    def destination_display(self) -> str:
+        return self.destination_label or self.destination.replace(",", ", ")
 
 
 @dataclass(frozen=True, slots=True)

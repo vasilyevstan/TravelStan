@@ -19,8 +19,10 @@ in the source tree for fixture research but are not runtime-selectable.
 ## Development
 
 Requirements: Python 3.13, Django 5.2, and `httpx`. Search uses server-rendered
-templates and vanilla CSS; JavaScript is not required. SQLite is configured by
-Django but search does not read or write it.
+templates, vanilla CSS, and a small optional vanilla-JavaScript city/airport
+combobox. Direct three-letter airport codes continue to work without
+JavaScript. SQLite is configured by Django but search does not read or write
+it.
 
 ```bash
 python3.13 -m venv .venv
@@ -54,6 +56,8 @@ synthetic/external configuration.
 
 The SerpApi experiment:
 
+- accepts direct IATA codes or provider-backed city/airport suggestions;
+- lets a city search choose all returned city airports or one specific airport;
 - supports Economy, Economy+ / Premium Economy, and Business;
 - supports exact dates and at most a `±1` joint date window;
 - makes at most six upstream requests per submitted search;
@@ -67,11 +71,14 @@ Synthetic data is never used as fallback after a SerpApi failure.
 
 ## Privacy and booking links
 
-Routes, dates, cabin, passenger count, market, and currency are sent to
-SerpApi, which uses them to scrape Google Flights. SerpApi documents ordinary
-search archive access for up to 31 days; its free plan does not include
-ZeroTrace. TravelStan stores no queries, responses, IP addresses, or results
-in its own database, cache, session, or application logs.
+Location text, selected airport codes, dates, cabin, passenger count, market,
+and currency are sent to SerpApi, which uses them to scrape Google Flights.
+The city/airport combobox waits for two characters, debounces requests, cancels
+superseded lookups, reuses results only in page memory, and allows at most 12
+lookup calls per loaded page. SerpApi documents ordinary search archive access
+for up to 31 days; its free plan does not include ZeroTrace. TravelStan stores
+no queries, responses, IP addresses, or results in its own database, cache,
+session, or application logs.
 
 No booking link is rendered by this experiment. Missing baggage fields remain
 `unknown`; SerpApi's `bags` parameter means carry-on and is not used as proof

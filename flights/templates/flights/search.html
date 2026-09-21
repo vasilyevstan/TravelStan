@@ -6,7 +6,8 @@
   <meta name="theme-color" content="#080b10">
   <title>TravelStan — personal flight comparison</title>
   {% load static %}
-  <link rel="stylesheet" href="{% static 'flights/css/app.css' %}?v=20260920-dark">
+  <link rel="stylesheet" href="{% static 'flights/css/app.css' %}?v=20260921-lightweight">
+  {% if smart_location_search %}<script src="{% static 'flights/js/location-search.js' %}?v=20260921" defer></script>{% endif %}
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -64,28 +65,47 @@
         <div role="alert" class="alert"><strong>Search unavailable.</strong> {{ error_message }}</div>
       {% endif %}
 
-      <form method="post" action="{% url 'flights:search' %}" novalidate class="search-panel">
+      <form method="post" action="{% url 'flights:search' %}" novalidate class="search-panel"
+            {% if smart_location_search %}data-location-lookup-url="{% url 'flights:location_lookup' %}"{% endif %}>
         {% csrf_token %}
 
         <fieldset class="primary-fields">
           <legend class="sr-only">Route and dates</legend>
-          <div class="field field--airport">
+          <div class="field field--airport location-picker">
             <label for="{{ form.origin.id_for_label }}">From</label>
             <input type="text" name="origin" id="{{ form.origin.id_for_label }}"
-                   maxlength="3" autocomplete="off" autocapitalize="characters"
-                   placeholder="TLL" value="{{ form.origin.value|default_if_none:'' }}"
-                   {% if form.origin.errors %}aria-invalid="true" aria-describedby="origin-error"{% endif %}>
+                   maxlength="{% if smart_location_search %}100{% else %}3{% endif %}"
+                   autocomplete="off" autocapitalize="characters" spellcheck="false"
+                   placeholder="{% if smart_location_search %}City or airport code{% else %}TLL{% endif %}"
+                   value="{{ form.origin.value|default_if_none:'' }}"
+                   {% if smart_location_search %}role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="origin-suggestions" data-location-input data-location-hidden="id_origin_id" data-location-options="origin-suggestions" data-location-status="origin-status"{% endif %}
+                   {% if form.origin.errors %}aria-invalid="true" aria-describedby="{% if smart_location_search %}origin-hint {% endif %}origin-error"{% elif smart_location_search %}aria-describedby="origin-hint"{% endif %}>
+            {% if smart_location_search %}
+              <input type="hidden" name="origin_id" id="id_origin_id" value="{{ form.origin_id.value|default_if_none:'' }}">
+              <span class="field-hint" id="origin-hint">Type a city or a 3-letter airport code.</span>
+              <div class="location-options" id="origin-suggestions" role="listbox" hidden></div>
+              <span class="sr-only" id="origin-status" aria-live="polite"></span>
+            {% endif %}
             {% if form.origin.errors %}<span class="field-error" id="origin-error">{{ form.origin.errors.0 }}</span>{% endif %}
           </div>
 
           <div class="route-arrow" aria-hidden="true">→</div>
 
-          <div class="field field--airport">
+          <div class="field field--airport location-picker">
             <label for="{{ form.destination.id_for_label }}">To</label>
             <input type="text" name="destination" id="{{ form.destination.id_for_label }}"
-                   maxlength="3" autocomplete="off" autocapitalize="characters"
-                   placeholder="AMS" value="{{ form.destination.value|default_if_none:'' }}"
-                   {% if form.destination.errors %}aria-invalid="true" aria-describedby="destination-error"{% endif %}>
+                   maxlength="{% if smart_location_search %}100{% else %}3{% endif %}"
+                   autocomplete="off" autocapitalize="characters" spellcheck="false"
+                   placeholder="{% if smart_location_search %}City or airport code{% else %}AMS{% endif %}"
+                   value="{{ form.destination.value|default_if_none:'' }}"
+                   {% if smart_location_search %}role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="destination-suggestions" data-location-input data-location-hidden="id_destination_id" data-location-options="destination-suggestions" data-location-status="destination-status"{% endif %}
+                   {% if form.destination.errors %}aria-invalid="true" aria-describedby="{% if smart_location_search %}destination-hint {% endif %}destination-error"{% elif smart_location_search %}aria-describedby="destination-hint"{% endif %}>
+            {% if smart_location_search %}
+              <input type="hidden" name="destination_id" id="id_destination_id" value="{{ form.destination_id.value|default_if_none:'' }}">
+              <span class="field-hint" id="destination-hint">Choose all city airports or one specific airport.</span>
+              <div class="location-options" id="destination-suggestions" role="listbox" hidden></div>
+              <span class="sr-only" id="destination-status" aria-live="polite"></span>
+            {% endif %}
             {% if form.destination.errors %}<span class="field-error" id="destination-error">{{ form.destination.errors.0 }}</span>{% endif %}
           </div>
 
@@ -159,7 +179,7 @@
       <section aria-labelledby="results-heading" class="results-section">
         <div class="results-heading-row">
           <div>
-            <p class="eyebrow">{{ query.origin }} to {{ query.destination }}</p>
+            <p class="eyebrow">{{ query.origin_display }} to {{ query.destination_display }}</p>
             <h2 id="results-heading">
               {% if offers %}{{ offers|length }} option{{ offers|length|pluralize }}{% else %}No matching flights{% endif %}
             </h2>

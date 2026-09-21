@@ -6,4 +6,5 @@ app_name = "flights"
 
 urlpatterns = [
     path("", views.search, name="search"),
+    path("locations/", views.location_lookup, name="location_lookup"),
 ]

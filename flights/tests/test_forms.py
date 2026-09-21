@@ -1,4 +1,4 @@
-"""Request contract: IATA codes, dates, modes, cabin, luggage, one adult."""
+"""Request contract: locations, dates, modes, cabin, luggage, one adult."""
 
 from __future__ import annotations
 
@@ -51,8 +51,57 @@ class SearchFormTests(SimpleTestCase):
                 self.assertFalse(form.is_valid())
                 self.assertIn("origin", form.errors)
 
+    def test_selected_city_can_search_all_or_one_airport(self) -> None:
+        form = SearchForm(
+            payload(
+                origin="New York — all airports",
+                origin_id="JFK,EWR,LGA",
+                destination="Milan Malpensa Airport",
+                destination_id="MXP",
+            ),
+            today=TODAY,
+            allow_location_sets=True,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        query = form.to_query()
+        self.assertEqual(query.origin, "JFK,EWR,LGA")
+        self.assertEqual(query.origin_display, "New York — all airports")
+        self.assertEqual(query.destination, "MXP")
+        self.assertEqual(query.destination_display, "Milan Malpensa Airport")
+
+    def test_city_text_requires_a_valid_selected_location(self) -> None:
+        form = SearchForm(
+            payload(origin="New York", origin_id=""),
+            today=TODAY,
+            allow_location_sets=True,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("origin", form.errors)
+
+    def test_location_sets_are_not_accepted_without_provider_support(self) -> None:
+        form = SearchForm(
+            payload(origin="New York", origin_id="JFK,EWR,LGA"),
+            today=TODAY,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("origin", form.errors)
+
     def test_identical_airports_rejected(self) -> None:
         form = SearchForm(payload(origin="AAA", destination="aaa"), today=TODAY)
+        self.assertFalse(form.is_valid())
+        self.assertIn("destination", form.errors)
+
+    def test_overlapping_city_airports_are_rejected(self) -> None:
+        form = SearchForm(
+            payload(
+                origin="New York — all airports",
+                origin_id="JFK,EWR,LGA",
+                destination="Newark Liberty International Airport",
+                destination_id="EWR",
+            ),
+            today=TODAY,
+            allow_location_sets=True,
+        )
         self.assertFalse(form.is_valid())
         self.assertIn("destination", form.errors)
 

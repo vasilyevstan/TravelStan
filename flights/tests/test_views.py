@@ -13,6 +13,7 @@ from django.urls import reverse
 
 from flights import views
 from flights.domain import DataStatus
+from flights.locations import LocationSuggestion
 from flights.services import GENERIC_FAILURE, SearchOutcome, SearchUnavailable
 
 from .factories import NOW, TODAY, make_offer
@@ -130,7 +131,87 @@ class ViewTests(TestCase):
         )
         self.assertIn("TravelStan does not store searches or results", content)
         self.assertIn("SerpApi's disclosed retention may still apply", content)
+        self.assertIn('role="combobox"', content)
+        self.assertIn("City or airport code", content)
+        self.assertIn("location-search.js?v=20260921", content)
         self.assertNotIn("do-not-render", content)
+
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="do-not-render",
+    )
+    @mock.patch("flights.views.search_locations")
+    def test_location_lookup_returns_normalized_choices_without_key(
+        self,
+        search_locations: mock.Mock,
+    ) -> None:
+        search_locations.return_value = (
+            LocationSuggestion(
+                value="MXP,LIN,BGY",
+                label="Milan — all airports",
+                detail="MXP, LIN, BGY",
+                kind="city",
+            ),
+        )
+        response = self.client.post(
+            reverse("flights:location_lookup"),
+            {"q": "Milan"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["suggestions"][0]["value"],
+            "MXP,LIN,BGY",
+        )
+        self.assertEqual(response.headers["Cache-Control"], "no-store")
+        self.assertNotContains(response, "do-not-render")
+
+    def test_location_lookup_is_disabled_for_synthetic_mode(self) -> None:
+        response = self.client.post(
+            reverse("flights:location_lookup"),
+            {"q": "Milan"},
+        )
+        self.assertEqual(response.status_code, 404)
+
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="do-not-render",
+    )
+    def test_location_lookup_enforces_csrf(self) -> None:
+        enforcing = Client(enforce_csrf_checks=True)
+        response = enforcing.post(
+            reverse("flights:location_lookup"),
+            {"q": "Milan"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="do-not-render",
+    )
+    def test_selected_city_label_is_used_in_results_heading(self) -> None:
+        with mock.patch("flights.views.run_search") as run_search:
+            run_search.return_value = SearchOutcome(
+                offers=(),
+                retrieved_at=NOW,
+                expires_at=None,
+                sources=("serpapi",),
+                notices=(),
+                requests_made=1,
+            )
+            content = self.client.post(
+                self.url,
+                valid_post(
+                    origin="New York — all airports",
+                    origin_id="JFK,EWR,LGA",
+                    destination="Milan Malpensa Airport",
+                    destination_id="MXP",
+                    cabin="economy",
+                ),
+            ).content.decode()
+        self.assertIn(
+            "New York — all airports to Milan Malpensa Airport",
+            content,
+        )
 
     def test_results_capped_at_ten_rows(self) -> None:
         response = self.client.post(
@@ -154,7 +235,7 @@ class ViewTests(TestCase):
         self.assertIn('role="alert"', content)
         self.assertIn("Check the highlighted fields and try again.", content)
         self.assertNotIn("ZZ9", str(response.context["form"].errors))
-        self.assertIn("Enter a three-letter airport code.", content)
+        self.assertIn("Choose a city or airport from the suggestions", content)
         self.assertIsNone(response.context["outcome"])
 
     def test_provider_failure_is_redacted(self) -> None:

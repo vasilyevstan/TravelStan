@@ -7,7 +7,7 @@ import pathlib
 from dataclasses import replace
 from unittest import mock
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from flights.domain import MAX_RESULT_ROWS, DataStatus, SearchMode
@@ -48,7 +48,7 @@ class ResponsiveCssTests(TestCase):
         self.assertIn("--focus: #ffd166", css)
         content = self.client.get(reverse("flights:search")).content.decode()
         self.assertIn('<meta name="theme-color" content="#080b10">', content)
-        self.assertIn("app.css?v=20260920-dark", content)
+        self.assertIn("app.css?v=20260921-lightweight", content)
 
     def test_css_is_mobile_first_with_offer_cards(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")
@@ -57,6 +57,26 @@ class ResponsiveCssTests(TestCase):
         self.assertIn("border-radius", css)
         self.assertIn(":focus-visible", css)
         self.assertNotIn("min-width: 321px", css)
+
+    def test_advanced_options_control_has_stable_full_width_layout(self) -> None:
+        css = CSS_PATH.read_text(encoding="utf-8")
+        self.assertIn("flex: 1 0 100%", css)
+        self.assertNotIn(".advanced[open] { width:", css)
+        self.assertIn('.advanced[open] summary::before { content: "−"; }', css)
+        self.assertIn(".location-options[hidden] { display: none; }", css)
+
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="test",
+    )
+    def test_location_combobox_is_keyboard_and_screen_reader_addressable(
+        self,
+    ) -> None:
+        content = self.client.get(reverse("flights:search")).content.decode()
+        self.assertEqual(content.count('role="combobox"'), 2)
+        self.assertIn('aria-autocomplete="list"', content)
+        self.assertIn('role="listbox"', content)
+        self.assertIn('aria-live="polite"', content)
 
     def test_viewport_meta_and_card_labels_present(self) -> None:
         content = self.client.get(reverse("flights:search")).content.decode()

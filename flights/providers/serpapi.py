@@ -349,8 +349,8 @@ class SerpApiProvider:
                 )
             )
         if (
-            segments[0].origin != expected_origin
-            or segments[-1].destination != expected_destination
+            segments[0].origin not in expected_origin.split(",")
+            or segments[-1].destination not in expected_destination.split(",")
             or any(
                 current.destination != following.origin
                 for current, following in zip(segments, segments[1:], strict=False)

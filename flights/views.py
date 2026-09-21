@@ -9,12 +9,16 @@ from __future__ import annotations
 import datetime as dt
 from collections.abc import Callable
 
-from django.http import HttpRequest, HttpResponse
+from django.conf import settings
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 
 from .clock import current_date, current_datetime
 from .forms import SearchForm
+from .locations import search_locations
 from .providers import configured_provider_names, provider_display_names
+from .providers.base import ProviderError
 from .services import SearchUnavailable, run_search
 
 TEMPLATE = "flights/search.html"
@@ -31,6 +35,7 @@ def search(
     now_provider = now_provider or current_datetime
     today = today_provider()
     provider_names = configured_provider_names()
+    smart_location_search = provider_names == ("serpapi",)
     context: dict[str, object] = {
         "today": today,
         "searched": False,
@@ -41,10 +46,15 @@ def search(
         "provider_names": provider_display_names(provider_names),
         "synthetic_mode": provider_names == ("synthetic_demo",),
         "experimental_mode": provider_names == ("serpapi",),
+        "smart_location_search": smart_location_search,
     }
 
     if request.method == "POST":
-        form = SearchForm(request.POST, today=today)
+        form = SearchForm(
+            request.POST,
+            today=today,
+            allow_location_sets=smart_location_search,
+        )
         if form.is_valid():
             query = form.to_query()
             context["query"] = query
@@ -59,7 +69,31 @@ def search(
         else:
             context["summary_error"] = GENERIC_FORM_ERROR
     else:
-        form = SearchForm(today=today)
+        form = SearchForm(today=today, allow_location_sets=smart_location_search)
 
     context["form"] = form
     return render(request, TEMPLATE, context)
+
+
+@require_POST
+def location_lookup(request: HttpRequest) -> JsonResponse:
+    if configured_provider_names() != ("serpapi",):
+        return JsonResponse({"error": "Location lookup unavailable."}, status=404)
+    query = request.POST.get("q", "")
+    if not 2 <= len(query.strip()) <= 60:
+        return JsonResponse({"suggestions": ()}, status=400)
+    try:
+        suggestions = search_locations(
+            query,
+            api_key=settings.SERPAPI_API_KEY,
+            endpoint=settings.SERPAPI_API_URL,
+            country=settings.TRAVELSTAN_COUNTRY,
+            locale=settings.TRAVELSTAN_LOCALE,
+        )
+    except ProviderError:
+        return JsonResponse({"error": "Location lookup unavailable."}, status=503)
+    response = JsonResponse(
+        {"suggestions": [suggestion.as_dict() for suggestion in suggestions]}
+    )
+    response["Cache-Control"] = "no-store"
+    return response
