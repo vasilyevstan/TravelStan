@@ -46,8 +46,8 @@ data, credentials, source code, or domain rules from other projects.
   by accepting a scraping intermediary. The adapter must remain visibly
   experimental, omit unproved checked-bag and airline-direct claims, use no
   synthetic fallback, and enforce a six-request per-search ceiling.
-- Bounded flexible searches contain independent date pairs. A transient
-  failure in one pair must not discard offers already obtained from another;
+- Bounded flexible searches contain independent date pairs. A redacted
+  provider failure in one pair must not discard offers obtained from another;
   disclose partial coverage, preserve the total request ceiling, and fail the
   whole search only when no date pair completed.
 - SerpApi's official Google Flights Autocomplete API can provide the city to

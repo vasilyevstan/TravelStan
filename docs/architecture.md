@@ -33,8 +33,11 @@ results can never be mixed or used as fallback for one another.
 - All classes, flexibility above `±1`, and checked-bag-required requests fail
   closed with a clear provider notice and zero upstream calls.
 - The adapter requests fresh data with `no_cache=true`, performs no retry, and
-  does not retrieve booking options. A provider failure returns one redacted
-  error and never synthetic data.
+  does not retrieve booking options. Exact searches return one redacted error
+  on provider failure. Flexible searches isolate provider failures by date
+  pair, retain completed pairs with an explicit partial-coverage notice, and
+  return the redacted error when no pair completes. Neither mode falls back to
+  synthetic data.
 
 ## Normalized results
 
