@@ -48,7 +48,7 @@ class ResponsiveCssTests(TestCase):
         self.assertIn("--focus: #ffd166", css)
         content = self.client.get(reverse("flights:search")).content.decode()
         self.assertIn('<meta name="theme-color" content="#080b10">', content)
-        self.assertIn("app.css?v=20260921-lightweight", content)
+        self.assertIn("app.css?v=20260921-uiux", content)
 
     def test_css_is_mobile_first_with_offer_cards(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")
@@ -58,11 +58,17 @@ class ResponsiveCssTests(TestCase):
         self.assertIn(":focus-visible", css)
         self.assertNotIn("min-width: 321px", css)
 
-    def test_advanced_options_control_has_stable_full_width_layout(self) -> None:
+    def test_search_and_offer_details_have_responsive_hierarchy(self) -> None:
         css = CSS_PATH.read_text(encoding="utf-8")
-        self.assertIn("flex: 1 0 100%", css)
-        self.assertNotIn(".advanced[open] { width:", css)
-        self.assertIn('.advanced[open] summary::before { content: "−"; }', css)
+        self.assertIn(".advanced:not([open])", css)
+        self.assertIn(".advanced[open]", css)
+        self.assertIn("overflow-wrap: anywhere", css)
+        self.assertIn("--primary-label-slot", css)
+        self.assertIn("align-items: start", css)
+        self.assertIn(".offer-airlines", css)
+        self.assertIn(".journey-route", css)
+        self.assertIn(".segment-list", css)
+        self.assertIn(".segment-operator", css)
         self.assertIn(".location-options[hidden] { display: none; }", css)
 
     @override_settings(

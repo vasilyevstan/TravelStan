@@ -9,9 +9,28 @@ their own work, or deploy.
 | `travelstan-architect` | Read-only architecture, provider boundary, privacy, and dependency-ordered contract. |
 | `travelstan-simplifier` | Read-only sealed three-pass simplification/validation and separate synthesis. |
 | `travelstan-developer` | Bounded implementation and focused tests; no Git or deployment authority. |
+| `travelstan-ui-ux` | Read-only visual hierarchy, responsive layout, interaction accessibility, and truthful source/carrier/operator/seller presentation review. |
 | `travelstan-provider-integrity` | Read-only source/method, terms, freshness, request-cost, baggage, seller-link, retention, and privacy review, including API-wrapped scraping intermediaries. |
 | `travelstan-critic-tester` | Read-only adversarial functional, UX, security, contract, operations review and test execution. |
 | `travelstan-final-validator` | Read-only release acceptance across all accumulated evidence. |
+
+## Default handoff chain
+
+```text
+travelstan-architect
+  -> travelstan-simplifier
+  -> travelstan-developer
+  -> travelstan-ui-ux
+  -> travelstan-provider-integrity
+  -> travelstan-critic-tester
+  -> travelstan-final-validator
+```
+
+UI findings return to `travelstan-developer`. The UI/UX role does not replace
+provider-integrity review or the critic-tester's broader functional, security,
+contract, operations, and test-execution responsibilities. For a slice with no
+rendered UI impact, the orchestrator may omit the UI/UX handoff while recording
+that scope decision.
 
 ## Handoffs
 
