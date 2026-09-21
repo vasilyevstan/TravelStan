@@ -53,7 +53,11 @@
           <ul>
             {% for field in form %}
               {% if field.errors %}
-                <li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ field.errors.0 }}</a></li>
+                <li>
+                  <a href="#{% if field.name == "mode" %}mode-field{% elif field.name == "luggage" %}luggage-field{% else %}{{ field.id_for_label }}{% endif %}">
+                    {{ field.label }}: {{ field.errors.0 }}
+                  </a>
+                </li>
               {% endif %}
             {% endfor %}
             {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
@@ -127,11 +131,10 @@
             {% if form.return_date.errors %}<span class="field-error" id="return-error">{{ form.return_date.errors.0 }}</span>{% endif %}
           </div>
 
-          <button type="submit" class="search-button">Search flights <span aria-hidden="true">→</span></button>
         </fieldset>
 
         <div class="search-options">
-          <fieldset class="segmented-field"{% if form.mode.errors %} aria-invalid="true" aria-describedby="mode-error"{% endif %}>
+          <fieldset id="mode-field" tabindex="-1" class="segmented-field"{% if form.mode.errors %} aria-invalid="true" aria-describedby="mode-error"{% endif %}>
             <legend class="sr-only">{{ form.mode.label }}</legend>
             {% for choice in form.mode %}
               <span class="segment-choice">{{ choice.tag }}<label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label></span>
@@ -166,7 +169,7 @@
                 {% if form.cabin.errors %}<span class="field-error" id="cabin-error">{{ form.cabin.errors.0 }}</span>{% endif %}
               </div>
 
-              <fieldset class="sub-fieldset"{% if form.luggage.errors %} aria-invalid="true" aria-describedby="luggage-error"{% endif %}>
+              <fieldset id="luggage-field" tabindex="-1" class="sub-fieldset"{% if form.luggage.errors %} aria-invalid="true" aria-describedby="luggage-error"{% endif %}>
                 <legend>{{ form.luggage.label }}</legend>
                 {% for choice in form.luggage %}
                   <span class="radio-choice">{{ choice.tag }}<label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label></span>
@@ -175,6 +178,8 @@
               </fieldset>
             </div>
           </details>
+
+          <button type="submit" class="search-button">Search flights <span aria-hidden="true">→</span></button>
         </div>
       </form>
     </section>
@@ -349,7 +354,7 @@
                 <aside class="offer-price" aria-label="Price and booking">
                   <span class="price-caption">Total for 1 adult</span>
                   <strong class="price">{{ offer.total_amount }} <small>{{ offer.currency }}</small></strong>
-                  {% if offer.purchase_url %}
+                  {% if offer.is_bookable and offer.purchase_url and offer.seller_name %}
                     <a class="booking-button" href="{{ offer.purchase_url }}" target="_blank" rel="noopener noreferrer">Continue to {{ offer.seller_name }} <span aria-hidden="true">↗</span></a>
                   {% else %}
                     <span class="booking-unavailable">Booking link unavailable</span>

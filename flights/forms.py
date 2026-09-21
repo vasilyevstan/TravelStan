@@ -119,6 +119,7 @@ class SearchForm(forms.Form):
     luggage = forms.ChoiceField(
         label="Checked luggage requirement",
         choices=LUGGAGE_CHOICES,
+        initial=LuggageChoice.NO_CHECKED_REQUIREMENT.value,
         widget=forms.RadioSelect,
         error_messages={"required": ERROR_REQUIRED, "invalid_choice": ERROR_CHOICE},
     )

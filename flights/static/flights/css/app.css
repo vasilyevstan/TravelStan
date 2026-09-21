@@ -372,6 +372,11 @@ input[aria-invalid="true"], select[aria-invalid="true"] {
 
 .search-button:active, .booking-button:active { transform: translateY(1px); }
 
+.search-options > .search-button {
+  width: 100%;
+  flex: 1 0 100%;
+}
+
 .search-options {
   display: flex;
   flex-wrap: wrap;
@@ -837,7 +842,6 @@ input[aria-invalid="true"], select[aria-invalid="true"] {
 @media (min-width: 42rem) {
   .site-header, main, .site-footer { width: min(100% - 3rem, 72rem); }
   .primary-fields { grid-template-columns: 1fr 1fr; }
-  .search-button { grid-column: 1 / -1; }
 
   .flexibility-field {
     width: auto;
@@ -854,8 +858,18 @@ input[aria-invalid="true"], select[aria-invalid="true"] {
   .advanced:not([open]) {
     width: auto;
     flex: 0 0 auto;
+  }
+
+  .search-options > .search-button {
+    width: auto;
+    min-height: 2.9rem;
+    min-width: 9.75rem;
+    flex: 0 0 auto;
+    margin-top: 1.15rem;
     margin-left: auto;
   }
+
+  .advanced[open] + .search-button { margin-top: 0.75rem; }
 
   .advanced-grid { grid-template-columns: 1fr 1.5fr; }
 
@@ -876,7 +890,7 @@ input[aria-invalid="true"], select[aria-invalid="true"] {
   .primary-fields {
     --primary-label-slot: calc(0.67rem * 1.5 + 0.32rem);
 
-    grid-template-columns: minmax(11rem, 1.25fr) auto minmax(11rem, 1.25fr) minmax(9rem, 0.9fr) minmax(9rem, 0.9fr) auto;
+    grid-template-columns: minmax(11rem, 1.25fr) auto minmax(11rem, 1.25fr) minmax(9rem, 0.9fr) minmax(9rem, 0.9fr);
     align-items: start;
     gap: 0.7rem;
     padding: 0.85rem;
@@ -890,14 +904,6 @@ input[aria-invalid="true"], select[aria-invalid="true"] {
     padding: 0;
     place-items: center;
     color: #657182;
-  }
-
-  .search-button {
-    min-height: 2.9rem;
-    grid-column: auto;
-    align-self: start;
-    margin-top: var(--primary-label-slot);
-    min-width: 9.75rem;
   }
 
   .search-options { padding-inline: 0.85rem; }

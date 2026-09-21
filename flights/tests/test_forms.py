@@ -187,11 +187,16 @@ class SearchFormTests(SimpleTestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.to_query().cabin, CabinClass.ALL_CLASSES)
 
-    def test_luggage_choice_is_required_and_explicit(self) -> None:
+    def test_luggage_choice_defaults_to_not_required_but_rejects_missing_post(
+        self,
+    ) -> None:
         form = SearchForm(payload(luggage=""), today=TODAY)
         self.assertFalse(form.is_valid())
         self.assertIn("luggage", form.errors)
-        self.assertIsNone(SearchForm(today=TODAY).fields["luggage"].initial)
+        self.assertEqual(
+            SearchForm(today=TODAY).fields["luggage"].initial,
+            LuggageChoice.NO_CHECKED_REQUIREMENT.value,
+        )
 
     def test_luggage_required_choice_maps_to_domain(self) -> None:
         form = SearchForm(payload(luggage="checked_required"), today=TODAY)

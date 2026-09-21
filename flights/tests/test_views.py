@@ -63,6 +63,19 @@ class ViewTests(TestCase):
             content.index('id="id_flexibility"'),
             content.index('<details class="advanced">'),
         )
+        self.assertIn(
+            'name="luggage" value="no_checked_requirement" '
+            'id="id_luggage_1" required checked',
+            content,
+        )
+        search_button = content.index('class="search-button"')
+        for setting in (
+            'id="mode-field"',
+            'id="id_flexibility"',
+            'id="id_cabin"',
+            'id="luggage-field"',
+        ):
+            self.assertLess(content.index(setting), search_button)
         self.assertNotIn('<details class="advanced" open>', content)
 
     def test_csrf_is_enforced(self) -> None:
@@ -191,6 +204,34 @@ class ViewTests(TestCase):
         self.assertIn('href="https://www.klm.com/book/test"', content)
         self.assertIn('target="_blank" rel="noopener noreferrer"', content)
         self.assertIn("Continue to Air France–KLM", content)
+
+    @override_settings(TRAVELSTAN_PROVIDERS=("afkl",), AFKL_API_KEY="test")
+    def test_booking_link_requires_bookable_offer_and_named_seller(self) -> None:
+        for overrides in (
+            {"is_bookable": False, "seller_name": "Air France–KLM"},
+            {"is_bookable": True, "seller_name": None},
+        ):
+            with self.subTest(overrides=overrides):
+                offer = replace(
+                    make_offer(),
+                    source="afkl",
+                    data_status=DataStatus.LIVE,
+                    purchase_url="https://www.klm.com/book/test",
+                    is_fictional=False,
+                    **overrides,
+                )
+                outcome = SearchOutcome(
+                    offers=(offer,),
+                    retrieved_at=NOW,
+                    expires_at=offer.expires_at,
+                    sources=("afkl",),
+                    notices=(),
+                    requests_made=1,
+                )
+                with mock.patch("flights.views.run_search", return_value=outcome):
+                    content = self.client.post(self.url, valid_post()).content.decode()
+                self.assertIn("Booking link unavailable", content)
+                self.assertNotIn('class="booking-button"', content)
 
     @override_settings(
         TRAVELSTAN_PROVIDERS=("serpapi",),
@@ -349,6 +390,18 @@ class ViewTests(TestCase):
         self.assertNotIn("ZZ9", str(response.context["form"].errors))
         self.assertIn("Choose a city or airport from the suggestions", content)
         self.assertIsNone(response.context["outcome"])
+
+    def test_radio_group_errors_link_to_focusable_targets(self) -> None:
+        response = self.client.post(
+            self.url,
+            valid_post(mode="invalid", luggage=""),
+        )
+        content = response.content.decode()
+        self.assertIn('href="#mode-field"', content)
+        self.assertIn('href="#luggage-field"', content)
+        self.assertIn('id="mode-field" tabindex="-1"', content)
+        self.assertIn('id="luggage-field" tabindex="-1"', content)
+        self.assertNotIn('href="#"', content)
 
     def test_provider_failure_is_redacted(self) -> None:
         with mock.patch(
