@@ -25,7 +25,7 @@ must not make real provider calls or require provider credentials.
 | `flights/tests/test_provider_adapters.py` | Offline prototype fixtures for AF–KLM, Singapore, and TUI. Passing fixtures do not establish compatibility with current official schemas. |
 | `flights/tests/test_serpapi.py` | Mocked exact and `±1` flows, partial flexible-date failures, all-pairs-failed behavior, city airport-set routing, request caps, route integrity, unknown baggage, omitted booking links, zero-call limitations, and secret-safe errors. |
 | `flights/tests/test_views.py` | Search and location-lookup CSRF, honest source labelling, normalized location JSON, city labels, accessible offer cards, redacted failures, and no persistence/session/cache/log capture. |
-| `flights/tests/test_presentation.py` | Lightweight responsive CSS, stable advanced-options layout, accessible location combobox markup, viewport metadata, result assembly, and zero database queries per search. |
+| `flights/tests/test_presentation.py` | Lightweight responsive CSS, aligned control rows, visible flexible-date configuration, compact advanced options, scannable carrier/segment hierarchy, accessible location combobox markup, viewport metadata, result assembly, and zero database queries per search. |
 
 Time is injected (`flights/clock.py`, `SearchForm(today=...)`,
 `views.search(today_provider=..., now_provider=...)`), so no test depends on

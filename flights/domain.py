@@ -285,6 +285,22 @@ class Offer:
     def is_round_trip(self) -> bool:
         return self.inbound is not None
 
+    @property
+    def marketing_carrier_names(self) -> tuple[str, ...]:
+        segments = self.outbound.segments + (
+            self.inbound.segments if self.inbound else ()
+        )
+        return tuple(
+            dict.fromkeys(segment.marketing_carrier_name for segment in segments)
+        )
+
+    @property
+    def flight_numbers(self) -> tuple[str, ...]:
+        segments = self.outbound.segments + (
+            self.inbound.segments if self.inbound else ()
+        )
+        return tuple(segment.flight_number for segment in segments)
+
     def identity(self) -> tuple[object, ...]:
         """Stable full-itinerary/baggage/price identity."""
         return (

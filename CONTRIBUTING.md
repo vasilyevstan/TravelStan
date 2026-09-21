@@ -47,6 +47,7 @@ The initial product is a material change:
 travelstan-architect
   -> travelstan-simplifier (three sealed independent passes + synthesis)
   -> travelstan-developer
+  -> travelstan-ui-ux
   -> travelstan-provider-integrity
   -> travelstan-critic-tester
   -> travelstan-final-validator

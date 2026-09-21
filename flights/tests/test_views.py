@@ -12,7 +12,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from flights import views
-from flights.domain import DataStatus
+from flights.domain import DataStatus, Itinerary, Segment
 from flights.locations import LocationSuggestion
 from flights.services import GENERIC_FAILURE, SearchOutcome, SearchUnavailable
 
@@ -52,10 +52,18 @@ class ViewTests(TestCase):
         self.assertIn('method="post"', content)
         self.assertIn("csrfmiddlewaretoken", content)
 
-    def test_get_shows_fixed_single_adult(self) -> None:
+    def test_get_shows_primary_date_options_before_compact_advanced_options(
+        self,
+    ) -> None:
         content = self.client.get(self.url).content.decode()
         self.assertIn("1 adult", content)
-        self.assertIn('<details class="advanced" open>', content)
+        self.assertIn("Required for flexible dates.", content)
+        self.assertIn("<summary>Cabin &amp; baggage</summary>", content)
+        self.assertLess(
+            content.index('id="id_flexibility"'),
+            content.index('<details class="advanced">'),
+        )
+        self.assertNotIn('<details class="advanced" open>', content)
 
     def test_csrf_is_enforced(self) -> None:
         enforcing = Client(enforce_csrf_checks=True)
@@ -72,13 +80,81 @@ class ViewTests(TestCase):
         self.assertIn("data-badge--synthetic", content)
         self.assertIn("Booking link unavailable", content)
 
-    def test_results_use_compact_offer_cards(self) -> None:
+    def test_results_use_scannable_offer_cards(self) -> None:
         content = self.client.post(self.url, valid_post()).content.decode()
         self.assertIn('class="offer-card"', content)
-        self.assertIn('aria-label="Outbound flight"', content)
+        self.assertIn('class="offer-title"', content)
+        self.assertIn('class="offer-airlines"', content)
+        self.assertIn('class="offer-flight-numbers"', content)
+        self.assertIn('class="journey-route"', content)
+        self.assertIn('class="segment-list"', content)
+        self.assertIn('aria-label="Outbound flight segments"', content)
         self.assertIn('aria-label="Price and booking"', content)
+        self.assertIn("Data source", content)
         self.assertIn("Total for 1 adult", content)
         self.assertIn("Baggage details", content)
+
+    def test_result_card_distinguishes_source_carrier_operator_and_seller(
+        self,
+    ) -> None:
+        start = dt.datetime(2026, 10, 1, 8, 0, tzinfo=dt.UTC)
+        outbound = Itinerary(
+            segments=(
+                Segment(
+                    marketing_carrier="ZQ",
+                    marketing_carrier_name="Demo Air Zephyr (fictional)",
+                    operating_carrier="ZQ",
+                    operating_carrier_name="Demo Air Zephyr (fictional)",
+                    flight_number="ZQ1791",
+                    origin="AAA",
+                    destination="CCC",
+                    departure=start,
+                    arrival=start + dt.timedelta(hours=1),
+                    duration_minutes=60,
+                ),
+                Segment(
+                    marketing_carrier="ZQ",
+                    marketing_carrier_name="Demo Air Zephyr (fictional)",
+                    operating_carrier="YR",
+                    operating_carrier_name="Demo Regional Wings (fictional)",
+                    flight_number="ZQ907",
+                    origin="CCC",
+                    destination="BBB",
+                    departure=start + dt.timedelta(hours=2),
+                    arrival=start + dt.timedelta(hours=5),
+                    duration_minutes=180,
+                ),
+            )
+        )
+        offer = replace(
+            make_offer(),
+            outbound=outbound,
+            seller_name="Unverified Seller",
+            purchase_url=None,
+        )
+        outcome = SearchOutcome(
+            offers=(offer,),
+            retrieved_at=NOW,
+            expires_at=offer.expires_at,
+            sources=(offer.source,),
+            notices=(),
+            requests_made=0,
+        )
+
+        with mock.patch("flights.views.run_search", return_value=outcome):
+            content = self.client.post(self.url, valid_post()).content.decode()
+
+        self.assertIn("Data source", content)
+        self.assertIn("Demo Air Zephyr (fictional)", content)
+        self.assertEqual(content.count("Demo Air Zephyr (fictional)"), 3)
+        self.assertIn("ZQ1791", content)
+        self.assertIn("ZQ907", content)
+        self.assertIn("AAA", content)
+        self.assertIn("CCC", content)
+        self.assertIn("BBB", content)
+        self.assertIn("Operated by Demo Regional Wings (fictional)", content)
+        self.assertNotIn("Unverified Seller", content)
+        self.assertNotIn('class="booking-button"', content)
 
     def test_results_show_four_baggage_slots(self) -> None:
         content = self.client.post(self.url, valid_post()).content.decode()
@@ -268,6 +344,7 @@ class ViewTests(TestCase):
         content = response.content.decode()
         self.assertEqual(response.status_code, 200)
         self.assertIn('role="alert"', content)
+        self.assertIn('id="error-summary" autofocus', content)
         self.assertIn("Check the highlighted fields and try again.", content)
         self.assertNotIn("ZZ9", str(response.context["form"].errors))
         self.assertIn("Choose a city or airport from the suggestions", content)
@@ -284,11 +361,13 @@ class ViewTests(TestCase):
 
     def test_one_way_and_round_trip_render(self) -> None:
         one_way = self.client.post(self.url, valid_post()).content.decode()
-        self.assertNotIn('aria-label="Return flight"', one_way)
+        self.assertNotIn('aria-labelledby="offer-1-return"', one_way)
+        self.assertNotIn('aria-label="Return flight segments"', one_way)
         round_trip = self.client.post(
             self.url, valid_post(return_date="2026-10-08")
         ).content.decode()
-        self.assertIn('aria-label="Return flight"', round_trip)
+        self.assertIn('aria-labelledby="offer-1-return"', round_trip)
+        self.assertIn('aria-label="Return flight segments"', round_trip)
 
     def test_injected_today_controls_departure_validation(self) -> None:
         with mock.patch(
@@ -313,7 +392,8 @@ class ViewTests(TestCase):
         self.assertIn("<fieldset", content)
         self.assertIn("<legend", content)
         self.assertIn("<article", content)
-        self.assertIn('aria-label="Outbound flight"', content)
+        self.assertIn('aria-labelledby="offer-1-outbound"', content)
+        self.assertIn('aria-label="Outbound flight segments"', content)
         self.assertIn('role="status"', content)
         self.assertIn('<html lang="en">', content)
         self.assertIn("<label ", content)

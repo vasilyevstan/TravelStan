@@ -60,6 +60,13 @@ data, credentials, source code, or domain rules from other projects.
 - A disclosure control must keep the same layout position when opened and
   closed. Let its content expand below a stable full-width summary instead of
   moving the summary between flex alignment states.
+- Search controls must align by their label and input rows, not by the total
+  height of field blocks containing optional hints or errors. Support text
+  grows downward without moving adjacent dates, arrows, or actions.
+- Flight cards need a five-second scan hierarchy: airline, flight numbers,
+  route and connections, dates and times, stops, price, and data source must
+  be visible without opening a disclosure. Keep data source, marketing
+  carrier, operating carrier, and seller as distinct claims.
 - Fixture tests exposed why provider samples must be matched exactly:
   Singapore's official total is under `fareSummary.fareTotal.totalAmount`, and
   TUI documents `prices.totalPrice` plus a multi-step booking-link flow.

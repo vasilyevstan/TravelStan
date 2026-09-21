@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#080b10">
   <title>TravelStan — personal flight comparison</title>
   {% load static %}
-  <link rel="stylesheet" href="{% static 'flights/css/app.css' %}?v=20260921-lightweight">
+  <link rel="stylesheet" href="{% static 'flights/css/app.css' %}?v=20260921-uiux">
   {% if smart_location_search %}<script src="{% static 'flights/js/location-search.js' %}?v=20260921" defer></script>{% endif %}
 </head>
 <body>
@@ -47,7 +47,7 @@
       <h2 id="search-heading" class="sr-only">Search flights</h2>
 
       {% if summary_error %}
-        <div role="alert" tabindex="-1" class="alert" id="error-summary">
+        <div role="alert" tabindex="-1" class="alert" id="error-summary" autofocus>
           <strong>Check the highlighted fields.</strong>
           <span>{{ summary_error }}</span>
           <ul>
@@ -131,46 +131,48 @@
         </fieldset>
 
         <div class="search-options">
-          <fieldset class="segmented-field">
+          <fieldset class="segmented-field"{% if form.mode.errors %} aria-invalid="true" aria-describedby="mode-error"{% endif %}>
             <legend class="sr-only">{{ form.mode.label }}</legend>
             {% for choice in form.mode %}
               <span class="segment-choice">{{ choice.tag }}<label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label></span>
             {% endfor %}
-            {% if form.mode.errors %}<span class="field-error">{{ form.mode.errors.0 }}</span>{% endif %}
+            {% if form.mode.errors %}<span class="field-error" id="mode-error">{{ form.mode.errors.0 }}</span>{% endif %}
           </fieldset>
+
+          <div class="field flexibility-field">
+            <label for="{{ form.flexibility.id_for_label }}">Flexibility <span class="optional">days</span></label>
+            <input type="number" name="flexibility" id="{{ form.flexibility.id_for_label }}"
+                   min="1" max="7" step="1" placeholder="1–7"
+                   value="{{ form.flexibility.value|default_if_none:'' }}"
+                   aria-describedby="flexibility-hint{% if form.flexibility.errors %} flexibility-error{% endif %}"
+                   {% if form.flexibility.errors %}aria-invalid="true"{% endif %}>
+            <span class="field-hint" id="flexibility-hint">Required for flexible dates.</span>
+            {% if form.flexibility.errors %}<span class="field-error" id="flexibility-error">{{ form.flexibility.errors.0 }}</span>{% endif %}
+          </div>
 
           <span class="passenger-summary">1 adult</span>
 
-          <details class="advanced" {% if not form.is_bound or form.cabin.errors or form.luggage.errors or form.flexibility.errors %}open{% endif %}>
-            <summary>Cabin, baggage &amp; flexibility</summary>
+          <details class="advanced"{% if form.cabin.errors or form.luggage.errors %} open{% endif %}>
+            <summary>Cabin &amp; baggage</summary>
             <div class="advanced-grid">
               <div class="field">
                 <label for="{{ form.cabin.id_for_label }}">{{ form.cabin.label }}</label>
-                <select name="cabin" id="{{ form.cabin.id_for_label }}">
+                <select name="cabin" id="{{ form.cabin.id_for_label }}"
+                        {% if form.cabin.errors %}aria-invalid="true" aria-describedby="cabin-error"{% endif %}>
                   {% for value, label in form.fields.cabin.choices %}
                     <option value="{{ value }}" {% if form.cabin.value == value %}selected{% endif %}>{{ label }}</option>
                   {% endfor %}
                 </select>
-                {% if form.cabin.errors %}<span class="field-error">{{ form.cabin.errors.0 }}</span>{% endif %}
+                {% if form.cabin.errors %}<span class="field-error" id="cabin-error">{{ form.cabin.errors.0 }}</span>{% endif %}
               </div>
 
-              <fieldset class="sub-fieldset">
+              <fieldset class="sub-fieldset"{% if form.luggage.errors %} aria-invalid="true" aria-describedby="luggage-error"{% endif %}>
                 <legend>{{ form.luggage.label }}</legend>
                 {% for choice in form.luggage %}
                   <span class="radio-choice">{{ choice.tag }}<label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label></span>
                 {% endfor %}
-                {% if form.luggage.errors %}<span class="field-error">{{ form.luggage.errors.0 }}</span>{% endif %}
+                {% if form.luggage.errors %}<span class="field-error" id="luggage-error">{{ form.luggage.errors.0 }}</span>{% endif %}
               </fieldset>
-
-              <div class="field field--small">
-                <label for="{{ form.flexibility.id_for_label }}">Flexibility in days</label>
-                <input type="number" name="flexibility" id="{{ form.flexibility.id_for_label }}"
-                       min="1" max="7" step="1" placeholder="1–7"
-                       value="{{ form.flexibility.value|default_if_none:'' }}"
-                       {% if form.flexibility.errors %}aria-invalid="true" aria-describedby="flexibility-error"{% endif %}>
-                <span class="field-hint">Used when flexible dates is selected.</span>
-                {% if form.flexibility.errors %}<span class="field-error" id="flexibility-error">{{ form.flexibility.errors.0 }}</span>{% endif %}
-              </div>
             </div>
           </details>
         </div>
@@ -204,67 +206,121 @@
         {% if offers %}
           <div class="offer-list">
             {% for offer in offers %}
-              <article class="offer-card">
+              <article class="offer-card" aria-labelledby="offer-{{ forloop.counter }}-title">
                 <div class="offer-main">
                   <header class="offer-header">
-                    <div>
-                      <span class="data-badge data-badge--{{ offer.data_status }}">{% if offer.source == "synthetic_demo" %}Sample{% else %}{{ offer.status_label }}{% endif %}</span>
-                      <strong class="source-name">{% if offer.source == "synthetic_demo" %}Generated itinerary{% elif offer.source == "serpapi" %}SerpApi / Google Flights{% else %}{{ offer.seller_name|default:offer.source }}{% endif %}</strong>
+                    <div class="offer-heading">
+                      <div class="offer-source">
+                        <span class="data-badge data-badge--{{ offer.data_status }}">{% if offer.source == "synthetic_demo" %}Sample{% else %}{{ offer.status_label }}{% endif %}</span>
+                        <span class="offer-source-copy">
+                          <span class="source-label">Data source</span>
+                          <strong class="source-name">{% if offer.source == "synthetic_demo" %}Generated itinerary{% elif offer.source == "serpapi" %}SerpApi / Google Flights{% else %}{{ offer.source }}{% endif %}</strong>
+                        </span>
+                      </div>
+
+                      <h3 class="offer-title" id="offer-{{ forloop.counter }}-title">
+                        <span class="sr-only">Airlines: </span>
+                        <span class="offer-airlines">
+                          {% for airline in offer.marketing_carrier_names %}<span>{{ airline }}</span>{% endfor %}
+                        </span>
+                      </h3>
+
+                      <p class="offer-flight-numbers" aria-label="Flight numbers">
+                        {% for flight_number in offer.flight_numbers %}<span>{{ flight_number }}</span>{% endfor %}
+                      </p>
                     </div>
                     <span class="fare-label">{{ offer.cabin_label }} · {{ offer.fare_brand }}</span>
                   </header>
 
                   <div class="journeys">
                     {% with first=offer.outbound.segments.0 last=offer.outbound.segments|last %}
-                      <section class="journey" aria-label="Outbound flight">
-                        <span class="journey-label">Outbound</span>
+                      <section class="journey" aria-labelledby="offer-{{ forloop.counter }}-outbound">
+                        <header class="journey-header">
+                          <div>
+                            <span class="journey-label">Outbound</span>
+                            <h4 class="journey-route" id="offer-{{ forloop.counter }}-outbound">
+                              {% for segment in offer.outbound.segments %}
+                                <span>{{ segment.origin }}</span>
+                                <span aria-hidden="true">→</span>
+                                {% if forloop.last %}<span>{{ segment.destination }}</span>{% endif %}
+                              {% endfor %}
+                            </h4>
+                          </div>
+                          <span class="journey-metrics">{{ offer.outbound.stops_label }} · {{ offer.outbound.duration_label }}</span>
+                        </header>
+
                         <div class="timeline">
                           <div class="time-point">
                             <strong>{{ first.departure_label }}</strong>
                             <span>{{ first.origin }}</span>
                           </div>
-                          <div class="flight-line">
-                            <span>{{ offer.outbound.duration_label }}</span>
-                            <i aria-hidden="true"></i>
-                            <span>{{ offer.outbound.stops_label }}</span>
-                          </div>
+                          <div class="flight-line" aria-hidden="true"><i></i></div>
                           <div class="time-point time-point--arrival">
                             <strong>{{ last.arrival_label }}</strong>
                             <span>{{ last.destination }}</span>
                           </div>
                         </div>
-                        <p class="carrier-line">
+
+                        <ol class="segment-list" aria-label="Outbound flight segments">
                           {% for segment in offer.outbound.segments %}
-                            {{ segment.marketing_carrier_name }} {{ segment.flight_number }}{% if segment.operated_by_other %}, operated by {{ segment.operating_carrier_name }}{% endif %}{% if not forloop.last %} · {% endif %}
+                            <li>
+                              <div class="segment-main">
+                                <strong class="segment-flight">{{ segment.marketing_carrier_name }} {{ segment.flight_number }}</strong>
+                                <span class="segment-route">{{ segment.origin }} <span aria-hidden="true">→</span> {{ segment.destination }}</span>
+                              </div>
+                              <span class="segment-time">{{ segment.departure_label }} – {{ segment.arrival_label }}</span>
+                              {% if segment.operated_by_other %}
+                                <span class="segment-operator">Operated by {{ segment.operating_carrier_name }}</span>
+                              {% endif %}
+                            </li>
                           {% endfor %}
-                        </p>
+                        </ol>
                       </section>
                     {% endwith %}
 
                     {% if offer.inbound %}
                       {% with first=offer.inbound.segments.0 last=offer.inbound.segments|last %}
-                        <section class="journey" aria-label="Return flight">
-                          <span class="journey-label">Return</span>
+                        <section class="journey" aria-labelledby="offer-{{ forloop.counter }}-return">
+                          <header class="journey-header">
+                            <div>
+                              <span class="journey-label">Return</span>
+                              <h4 class="journey-route" id="offer-{{ forloop.counter }}-return">
+                                {% for segment in offer.inbound.segments %}
+                                  <span>{{ segment.origin }}</span>
+                                  <span aria-hidden="true">→</span>
+                                  {% if forloop.last %}<span>{{ segment.destination }}</span>{% endif %}
+                                {% endfor %}
+                              </h4>
+                            </div>
+                            <span class="journey-metrics">{{ offer.inbound.stops_label }} · {{ offer.inbound.duration_label }}</span>
+                          </header>
+
                           <div class="timeline">
                             <div class="time-point">
                               <strong>{{ first.departure_label }}</strong>
                               <span>{{ first.origin }}</span>
                             </div>
-                            <div class="flight-line">
-                              <span>{{ offer.inbound.duration_label }}</span>
-                              <i aria-hidden="true"></i>
-                              <span>{{ offer.inbound.stops_label }}</span>
-                            </div>
+                            <div class="flight-line" aria-hidden="true"><i></i></div>
                             <div class="time-point time-point--arrival">
                               <strong>{{ last.arrival_label }}</strong>
                               <span>{{ last.destination }}</span>
                             </div>
                           </div>
-                          <p class="carrier-line">
+
+                          <ol class="segment-list" aria-label="Return flight segments">
                             {% for segment in offer.inbound.segments %}
-                              {{ segment.marketing_carrier_name }} {{ segment.flight_number }}{% if segment.operated_by_other %}, operated by {{ segment.operating_carrier_name }}{% endif %}{% if not forloop.last %} · {% endif %}
+                              <li>
+                                <div class="segment-main">
+                                  <strong class="segment-flight">{{ segment.marketing_carrier_name }} {{ segment.flight_number }}</strong>
+                                  <span class="segment-route">{{ segment.origin }} <span aria-hidden="true">→</span> {{ segment.destination }}</span>
+                                </div>
+                                <span class="segment-time">{{ segment.departure_label }} – {{ segment.arrival_label }}</span>
+                                {% if segment.operated_by_other %}
+                                  <span class="segment-operator">Operated by {{ segment.operating_carrier_name }}</span>
+                                {% endif %}
+                              </li>
                             {% endfor %}
-                          </p>
+                          </ol>
                         </section>
                       {% endwith %}
                     {% endif %}
