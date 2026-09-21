@@ -16,9 +16,10 @@ results can never be mixed or used as fallback for one another.
 
 - One adult; direct upper-case three-character IATA codes or a selected
   SerpApi city/airport suggestion; one-way or return.
-- A city suggestion expands to the returned IATA airport set. The user may
-  search that complete set or select one listed airport. Overlapping origin
-  and destination sets are rejected.
+- An all-airports city suggestion uses SerpApi's documented location KGMID;
+  the returned airport-code list is retained only to validate result endpoints
+  and reject overlapping origin/destination choices. A specific-airport choice
+  uses its IATA code directly.
 - Exact dates or joint outbound/return flexibility of one to seven days.
 - Economy, Economy+ / Premium Economy, Business, or all supported classes.
 - An explicit checked-bag requirement keeps only offers with a known positive,
@@ -67,8 +68,11 @@ external-link attributes remain enforced.
 The location lookup is a CSRF-protected POST so location text is not placed in
 application URLs. It requires two characters, returns at most ten normalized
 options, and relies on SerpApi's one-hour provider cache rather than retaining
-queries locally. The browser debounces requests, cancels superseded work,
-keeps only page-memory results, and caps each loaded page at 12 lookups.
+queries locally. The browser debounces requests, immediately cancels
+superseded work, keeps only page-memory results, and caps each loaded page at
+12 lookups. A process-local budget additionally permits at most 20 lookup
+requests per minute and 100 for the process lifetime; it stores only monotonic
+timestamps and a count, not query or user data.
 
 The interface uses a lightweight dark layout, native labelled controls, an
 advanced-options disclosure whose position does not change when expanded,

@@ -78,10 +78,11 @@
                    autocomplete="off" autocapitalize="characters" spellcheck="false"
                    placeholder="{% if smart_location_search %}City or airport code{% else %}TLL{% endif %}"
                    value="{{ form.origin.value|default_if_none:'' }}"
-                   {% if smart_location_search %}role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="origin-suggestions" data-location-input data-location-hidden="id_origin_id" data-location-options="origin-suggestions" data-location-status="origin-status"{% endif %}
+                   {% if smart_location_search %}role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="origin-suggestions" data-location-input data-location-hidden="id_origin_id" data-location-airports="id_origin_airports" data-location-options="origin-suggestions" data-location-status="origin-status"{% endif %}
                    {% if form.origin.errors %}aria-invalid="true" aria-describedby="{% if smart_location_search %}origin-hint {% endif %}origin-error"{% elif smart_location_search %}aria-describedby="origin-hint"{% endif %}>
             {% if smart_location_search %}
               <input type="hidden" name="origin_id" id="id_origin_id" value="{{ form.origin_id.value|default_if_none:'' }}">
+              <input type="hidden" name="origin_airports" id="id_origin_airports" value="{{ form.origin_airports.value|default_if_none:'' }}">
               <span class="field-hint" id="origin-hint">Type a city or a 3-letter airport code.</span>
               <div class="location-options" id="origin-suggestions" role="listbox" hidden></div>
               <span class="sr-only" id="origin-status" aria-live="polite"></span>
@@ -98,10 +99,11 @@
                    autocomplete="off" autocapitalize="characters" spellcheck="false"
                    placeholder="{% if smart_location_search %}City or airport code{% else %}AMS{% endif %}"
                    value="{{ form.destination.value|default_if_none:'' }}"
-                   {% if smart_location_search %}role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="destination-suggestions" data-location-input data-location-hidden="id_destination_id" data-location-options="destination-suggestions" data-location-status="destination-status"{% endif %}
+                   {% if smart_location_search %}role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="destination-suggestions" data-location-input data-location-hidden="id_destination_id" data-location-airports="id_destination_airports" data-location-options="destination-suggestions" data-location-status="destination-status"{% endif %}
                    {% if form.destination.errors %}aria-invalid="true" aria-describedby="{% if smart_location_search %}destination-hint {% endif %}destination-error"{% elif smart_location_search %}aria-describedby="destination-hint"{% endif %}>
             {% if smart_location_search %}
               <input type="hidden" name="destination_id" id="id_destination_id" value="{{ form.destination_id.value|default_if_none:'' }}">
+              <input type="hidden" name="destination_airports" id="id_destination_airports" value="{{ form.destination_airports.value|default_if_none:'' }}">
               <span class="field-hint" id="destination-hint">Choose all city airports or one specific airport.</span>
               <div class="location-options" id="destination-suggestions" role="listbox" hidden></div>
               <span class="sr-only" id="destination-status" aria-live="polite"></span>

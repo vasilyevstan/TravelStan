@@ -3,23 +3,35 @@
 from __future__ import annotations
 
 import re
+import time
+from collections import deque
 from dataclasses import asdict, dataclass
+from threading import Lock
 from typing import Any
 
 from .providers.base import ProviderError
 from .providers.http import request_json
-from .providers.normalization import as_list, as_mapping, first_value
+from .providers.normalization import (
+    as_list,
+    as_mapping,
+    first_value,
+    validated_endpoint,
+)
 
 ALLOWED_API_HOSTS = ("serpapi.com",)
 IATA_RE = re.compile(r"^[A-Z]{3}$")
+KGMID_RE = re.compile(r"^/[mg]/[A-Za-z0-9_-]+$")
 AIRPORT_NAME_RE = re.compile(r"\b(?:airport|aerodrome|airfield)\b", re.IGNORECASE)
-MAX_AIRPORTS_PER_CITY = 8
+MAX_AIRPORTS_PER_CITY = 20
 MAX_LOCATION_OPTIONS = 10
+MAX_LOOKUPS_PER_MINUTE = 20
+MAX_LOOKUPS_PER_PROCESS = 100
 
 
 @dataclass(frozen=True, slots=True)
 class LocationSuggestion:
     value: str
+    airports: str
     label: str
     detail: str
     kind: str
@@ -28,26 +40,56 @@ class LocationSuggestion:
         return asdict(self)
 
 
+class LocationLookupBudget:
+    def __init__(
+        self,
+        *,
+        minute_limit: int = MAX_LOOKUPS_PER_MINUTE,
+        process_limit: int = MAX_LOOKUPS_PER_PROCESS,
+    ) -> None:
+        self.minute_limit = minute_limit
+        self.process_limit = process_limit
+        self._timestamps: deque[float] = deque()
+        self._total = 0
+        self._lock = Lock()
+
+    def reserve(self, now: float | None = None) -> bool:
+        current = time.monotonic() if now is None else now
+        with self._lock:
+            while self._timestamps and current - self._timestamps[0] >= 60:
+                self._timestamps.popleft()
+            if (
+                len(self._timestamps) >= self.minute_limit
+                or self._total >= self.process_limit
+            ):
+                return False
+            self._timestamps.append(current)
+            self._total += 1
+            return True
+
+
+location_lookup_budget = LocationLookupBudget()
+
+
 def search_locations(
     query: str,
     *,
     api_key: str,
     endpoint: str,
     country: str,
-    locale: str,
 ) -> tuple[LocationSuggestion, ...]:
     term = query.strip()
     if not 2 <= len(term) <= 60:
         return ()
     payload = request_json(
         "GET",
-        endpoint,
+        validated_endpoint(endpoint, ALLOWED_API_HOSTS),
         headers={"accept": "application/json"},
         params={
             "engine": "google_flights_autocomplete",
             "q": term,
             "gl": country.lower(),
-            "hl": locale.split("-", maxsplit=1)[0].lower(),
+            "hl": "en",
             "exclude_regions": "true",
             "output": "json",
             "api_key": api_key,
@@ -75,7 +117,7 @@ def _normalize_suggestions(
         name = str(suggestion.get("name") or "").strip()
         description = str(suggestion.get("description") or "").strip()
         airports: list[dict[str, str]] = []
-        for raw_airport in as_list(suggestion.get("airports"))[:MAX_AIRPORTS_PER_CITY]:
+        for raw_airport in as_list(suggestion.get("airports")):
             airport = as_mapping(raw_airport)
             code = str(airport.get("id") or "").strip().upper()
             airport_name = str(airport.get("name") or "").strip()
@@ -89,12 +131,16 @@ def _normalize_suggestions(
                     "distance": str(airport.get("distance") or "").strip(),
                 }
             )
+            if len(airports) >= MAX_AIRPORTS_PER_CITY:
+                break
 
-        if len(airports) > 1 and name:
+        suggestion_id = str(suggestion.get("id") or "").strip()
+        if len(airports) > 1 and name and KGMID_RE.fullmatch(suggestion_id):
             codes = ",".join(airport["code"] for airport in airports)
             append(
                 LocationSuggestion(
-                    value=codes,
+                    value=suggestion_id,
+                    airports=codes,
                     label=f"{name} — all airports",
                     detail=", ".join(airport["code"] for airport in airports),
                     kind="city",
@@ -114,19 +160,21 @@ def _normalize_suggestions(
             append(
                 LocationSuggestion(
                     value=airport["code"],
+                    airports=airport["code"],
                     label=airport["name"],
                     detail=" · ".join(detail_parts),
                     kind="airport",
                 )
             )
 
-        suggestion_id = str(suggestion.get("id") or "").strip().upper()
-        if not airports and IATA_RE.fullmatch(suggestion_id):
+        airport_id = suggestion_id.upper()
+        if not airports and IATA_RE.fullmatch(airport_id):
             append(
                 LocationSuggestion(
-                    value=suggestion_id,
-                    label=name or suggestion_id,
-                    detail=description or suggestion_id,
+                    value=airport_id,
+                    airports=airport_id,
+                    label=name or airport_id,
+                    detail=description or airport_id,
                     kind="airport",
                 )
             )

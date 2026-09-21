@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from .clock import current_date, current_datetime
 from .forms import SearchForm
-from .locations import search_locations
+from .locations import location_lookup_budget, search_locations
 from .providers import configured_provider_names, provider_display_names
 from .providers.base import ProviderError
 from .services import SearchUnavailable, run_search
@@ -79,16 +79,21 @@ def search(
 def location_lookup(request: HttpRequest) -> JsonResponse:
     if configured_provider_names() != ("serpapi",):
         return JsonResponse({"error": "Location lookup unavailable."}, status=404)
+    if not settings.SERPAPI_API_KEY:
+        return JsonResponse({"error": "Location lookup unavailable."}, status=503)
     query = request.POST.get("q", "")
     if not 2 <= len(query.strip()) <= 60:
         return JsonResponse({"suggestions": ()}, status=400)
+    if not location_lookup_budget.reserve():
+        response = JsonResponse({"error": "Location lookup limit reached."}, status=429)
+        response["Retry-After"] = "60"
+        return response
     try:
         suggestions = search_locations(
             query,
             api_key=settings.SERPAPI_API_KEY,
             endpoint=settings.SERPAPI_API_URL,
             country=settings.TRAVELSTAN_COUNTRY,
-            locale=settings.TRAVELSTAN_LOCALE,
         )
     except ProviderError:
         return JsonResponse({"error": "Location lookup unavailable."}, status=503)

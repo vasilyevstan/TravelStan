@@ -18,7 +18,7 @@ must not make real provider calls or require provider credentials.
 | Module | Contract covered |
 | --- | --- |
 | `flights/tests/test_forms.py` | Direct upper-case IATA codes, selected city airport sets, individual-airport selection, overlap rejection, strictly future dates, one-way normalization, exact/flexible modes, cabin/luggage choices, single adult, and generic redacted messages. |
-| `flights/tests/test_locations.py` | Mocked SerpApi autocomplete parameters, all-airports and individual-airport normalization, deduplication, short-query zero-call behavior, provider caching, and redacted errors. |
+| `flights/tests/test_locations.py` | Mocked SerpApi autocomplete parameters, KGMID all-airports and individual-airport normalization, rail exclusion, endpoint allowlisting, process/minute budgets, deduplication, short-query zero-call behavior, provider-cache eligibility, and redacted errors. |
 | `flights/tests/test_planner.py` | Exact offset `[0]`, canonical flexible `[0, -1, +1, ...]`, the 15-option pre-filter cap, joint departure/return shifting, one-way preservation, removal of shifts on or before the current date, and no Cartesian product or backfill. |
 | `flights/tests/test_results.py` | Four-slot baggage, checked-required filtering, ancillary/weight identity, sort-before-dedupe, and the ten-card cap. |
 | `flights/tests/test_provider.py` | Synthetic determinism, no-network operation, SerpApi registry configuration, key requirements, synthetic/external separation, and rejection of unverified direct adapters. |

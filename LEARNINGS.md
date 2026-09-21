@@ -48,9 +48,11 @@ data, credentials, source code, or domain rules from other projects.
   synthetic fallback, and enforce a six-request per-search ceiling.
 - SerpApi's official Google Flights Autocomplete API can provide the city to
   airport relationship without inventing a local location database. Preserve
-  direct IATA fallback, expose both all-airports and specific-airport choices,
-  debounce and cap browser lookups, and disclose that autocomplete adds
-  provider requests and retention.
+  direct IATA fallback, use the documented city KGMID for an all-airports
+  search, expose specific-airport choices, validate returned endpoints against
+  the suggestion's airport set, allowlist the credential-bearing endpoint,
+  enforce both browser and server lookup limits, and disclose that
+  autocomplete adds provider requests and retention.
 - A disclosure control must keep the same layout position when opened and
   closed. Let its content expand below a stable full-width summary instead of
   moving the summary between flex alignment states.

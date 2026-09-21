@@ -37,7 +37,9 @@ exception causes that could retain it.
 - City/airport autocomplete uses separate SerpApi requests. It begins after
   two characters, is debounced by 550 ms, cancels superseded requests, reuses
   identical terms in page memory, allows provider caching, and stops after 12
-  lookup calls per loaded page.
+  lookup calls per loaded page. The server additionally rejects lookups after
+  20 calls per minute or 100 calls in one process lifetime; restart resets the
+  process-lifetime counter.
 - SerpApi exact one-way uses one request; exact round-trip uses at most four.
 - Flexible mode is limited to `±1`; a round-trip uses at most six requests.
 - All classes, checked-bag-required, and wider flexible searches make zero
@@ -49,8 +51,9 @@ exception causes that could retain it.
   where cached repeats are documented as free. Twenty maximum-budget flight
   searches use at most 120 flight calls, but operators must also account for
   uncached location lookups.
-- No persistent quota ledger exists. Disable SerpApi automatic early renewal
-  and monitor its dashboard before increasing search scope.
+- No persistent monthly quota ledger exists. The browser and process limits
+  prevent an accidental request loop but do not replace SerpApi dashboard
+  monitoring. Disable automatic early renewal before increasing search scope.
 
 HTTP 401/403 means the key or account is unusable. HTTP 429 means the provider
 quota is exhausted. Neither condition is retried automatically.

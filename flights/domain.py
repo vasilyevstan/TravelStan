@@ -332,6 +332,8 @@ class SearchQuery:
     adults: int = 1
     origin_label: str | None = None
     destination_label: str | None = None
+    origin_airports: tuple[str, ...] = ()
+    destination_airports: tuple[str, ...] = ()
 
     @property
     def is_one_way(self) -> bool:
@@ -348,6 +350,14 @@ class SearchQuery:
     @property
     def destination_display(self) -> str:
         return self.destination_label or self.destination.replace(",", ", ")
+
+    @property
+    def allowed_origin_airports(self) -> tuple[str, ...]:
+        return self.origin_airports or (self.origin,)
+
+    @property
+    def allowed_destination_airports(self) -> tuple[str, ...]:
+        return self.destination_airports or (self.destination,)
 
 
 @dataclass(frozen=True, slots=True)

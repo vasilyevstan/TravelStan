@@ -6,7 +6,7 @@ from unittest import mock
 
 from django.test import SimpleTestCase
 
-from flights.locations import search_locations
+from flights.locations import LocationLookupBudget, search_locations
 from flights.providers.base import ProviderError
 
 
@@ -58,13 +58,13 @@ class LocationSearchTests(SimpleTestCase):
             api_key="private",
             endpoint="https://serpapi.com/search.json",
             country="EE",
-            locale="en-EE",
         )
 
         self.assertEqual(
             [suggestion.value for suggestion in suggestions],
-            ["JFK,EWR,LGA", "JFK", "EWR", "LGA"],
+            ["/m/02_286", "JFK", "EWR", "LGA"],
         )
+        self.assertEqual(suggestions[0].airports, "JFK,EWR,LGA")
         self.assertEqual(suggestions[0].label, "New York — all airports")
         self.assertEqual(suggestions[0].kind, "city")
         self.assertIn("JFK", suggestions[1].detail)
@@ -89,7 +89,6 @@ class LocationSearchTests(SimpleTestCase):
             api_key="private",
             endpoint="https://serpapi.com/search.json",
             country="EE",
-            locale="en-EE",
         )
         self.assertEqual([suggestion.value for suggestion in suggestions], ["MXP"])
 
@@ -102,7 +101,6 @@ class LocationSearchTests(SimpleTestCase):
                 api_key="private",
                 endpoint="https://serpapi.com/search.json",
                 country="EE",
-                locale="en-EE",
             )
 
     @mock.patch("flights.locations.request_json")
@@ -113,7 +111,32 @@ class LocationSearchTests(SimpleTestCase):
                 api_key="private",
                 endpoint="https://serpapi.com/search.json",
                 country="EE",
-                locale="en-EE",
             )
         )
         request_json.assert_not_called()
+
+    @mock.patch("flights.locations.request_json")
+    def test_endpoint_is_validated_before_key_is_attached(
+        self,
+        request_json: mock.Mock,
+    ) -> None:
+        with self.assertRaisesRegex(ProviderError, "endpoint is not permitted"):
+            search_locations(
+                "Milan",
+                api_key="private",
+                endpoint="https://example.com/collect",
+                country="EE",
+            )
+        request_json.assert_not_called()
+
+    def test_server_budget_limits_minute_and_process_calls(self) -> None:
+        minute_budget = LocationLookupBudget(minute_limit=2, process_limit=10)
+        self.assertTrue(minute_budget.reserve(now=0))
+        self.assertTrue(minute_budget.reserve(now=1))
+        self.assertFalse(minute_budget.reserve(now=2))
+        self.assertTrue(minute_budget.reserve(now=61))
+
+        process_budget = LocationLookupBudget(minute_limit=10, process_limit=2)
+        self.assertTrue(process_budget.reserve(now=0))
+        self.assertTrue(process_budget.reserve(now=61))
+        self.assertFalse(process_budget.reserve(now=122))

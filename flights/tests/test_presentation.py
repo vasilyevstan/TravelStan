@@ -77,6 +77,15 @@ class ResponsiveCssTests(TestCase):
         self.assertIn('aria-autocomplete="list"', content)
         self.assertIn('role="listbox"', content)
         self.assertIn('aria-live="polite"', content)
+        script = (
+            pathlib.Path(__file__).resolve().parents[1]
+            / "static"
+            / "flights"
+            / "js"
+            / "location-search.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("choice.tabIndex = -1", script)
+        self.assertIn("controller?.abort()", script)
 
     def test_viewport_meta_and_card_labels_present(self) -> None:
         content = self.client.get(reverse("flights:search")).content.decode()

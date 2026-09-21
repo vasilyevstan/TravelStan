@@ -55,16 +55,19 @@ class SearchFormTests(SimpleTestCase):
         form = SearchForm(
             payload(
                 origin="New York — all airports",
-                origin_id="JFK,EWR,LGA",
+                origin_id="/m/02_286",
+                origin_airports="JFK,EWR,LGA",
                 destination="Milan Malpensa Airport",
                 destination_id="MXP",
+                destination_airports="MXP",
             ),
             today=TODAY,
             allow_location_sets=True,
         )
         self.assertTrue(form.is_valid(), form.errors)
         query = form.to_query()
-        self.assertEqual(query.origin, "JFK,EWR,LGA")
+        self.assertEqual(query.origin, "/m/02_286")
+        self.assertEqual(query.allowed_origin_airports, ("JFK", "EWR", "LGA"))
         self.assertEqual(query.origin_display, "New York — all airports")
         self.assertEqual(query.destination, "MXP")
         self.assertEqual(query.destination_display, "Milan Malpensa Airport")
@@ -95,9 +98,11 @@ class SearchFormTests(SimpleTestCase):
         form = SearchForm(
             payload(
                 origin="New York — all airports",
-                origin_id="JFK,EWR,LGA",
+                origin_id="/m/02_286",
+                origin_airports="JFK,EWR,LGA",
                 destination="Newark Liberty International Airport",
                 destination_id="EWR",
+                destination_airports="EWR",
             ),
             today=TODAY,
             allow_location_sets=True,

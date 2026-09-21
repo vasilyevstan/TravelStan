@@ -148,7 +148,7 @@ class SerpApiProviderTests(SimpleTestCase):
 
     def test_city_airport_set_accepts_a_matching_specific_airport(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
-            self.assertEqual(request.url.params["departure_id"], "AAA,AAB")
+            self.assertEqual(request.url.params["departure_id"], "/m/example")
             return httpx.Response(
                 200,
                 json={
@@ -164,8 +164,9 @@ class SerpApiProviderTests(SimpleTestCase):
 
         provider = SerpApiProvider("key", transport=httpx.MockTransport(handler))
         query = make_query(
-            origin="AAA,AAB",
+            origin="/m/example",
             origin_label="Example City — all airports",
+            origin_airports=("AAA", "AAB"),
             cabin=CabinClass.ECONOMY,
         )
         result = provider.search(query, plan_date_options(query, TODAY), NOW)

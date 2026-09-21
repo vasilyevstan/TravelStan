@@ -147,7 +147,8 @@ class ViewTests(TestCase):
     ) -> None:
         search_locations.return_value = (
             LocationSuggestion(
-                value="MXP,LIN,BGY",
+                value="/m/0947l",
+                airports="MXP,LIN,BGY",
                 label="Milan — all airports",
                 detail="MXP, LIN, BGY",
                 kind="city",
@@ -160,6 +161,10 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json()["suggestions"][0]["value"],
+            "/m/0947l",
+        )
+        self.assertEqual(
+            response.json()["suggestions"][0]["airports"],
             "MXP,LIN,BGY",
         )
         self.assertEqual(response.headers["Cache-Control"], "no-store")
@@ -174,6 +179,17 @@ class ViewTests(TestCase):
 
     @override_settings(
         TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="",
+    )
+    def test_location_lookup_fails_closed_without_key(self) -> None:
+        response = self.client.post(
+            reverse("flights:location_lookup"),
+            {"q": "Milan"},
+        )
+        self.assertEqual(response.status_code, 503)
+
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
         SERPAPI_API_KEY="do-not-render",
     )
     def test_location_lookup_enforces_csrf(self) -> None:
@@ -183,6 +199,23 @@ class ViewTests(TestCase):
             {"q": "Milan"},
         )
         self.assertEqual(response.status_code, 403)
+
+    @override_settings(
+        TRAVELSTAN_PROVIDERS=("serpapi",),
+        SERPAPI_API_KEY="do-not-render",
+    )
+    @mock.patch("flights.views.location_lookup_budget")
+    def test_location_lookup_enforces_server_budget(
+        self,
+        location_lookup_budget: mock.Mock,
+    ) -> None:
+        location_lookup_budget.reserve.return_value = False
+        response = self.client.post(
+            reverse("flights:location_lookup"),
+            {"q": "Milan"},
+        )
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.headers["Retry-After"], "60")
 
     @override_settings(
         TRAVELSTAN_PROVIDERS=("serpapi",),
@@ -202,9 +235,11 @@ class ViewTests(TestCase):
                 self.url,
                 valid_post(
                     origin="New York — all airports",
-                    origin_id="JFK,EWR,LGA",
+                    origin_id="/m/02_286",
+                    origin_airports="JFK,EWR,LGA",
                     destination="Milan Malpensa Airport",
                     destination_id="MXP",
+                    destination_airports="MXP",
                     cabin="economy",
                 ),
             ).content.decode()

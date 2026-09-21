@@ -10,6 +10,7 @@
 
   document.querySelectorAll("[data-location-input]").forEach((input) => {
     const hidden = document.getElementById(input.dataset.locationHidden);
+    const airports = document.getElementById(input.dataset.locationAirports);
     const options = document.getElementById(input.dataset.locationOptions);
     const status = document.getElementById(input.dataset.locationStatus);
     let debounceTimer;
@@ -42,6 +43,7 @@
     const choose = (suggestion) => {
       input.value = suggestion.label;
       hidden.value = suggestion.value;
+      airports.value = suggestion.airports;
       status.textContent = `Selected ${suggestion.label}.`;
       close();
     };
@@ -53,6 +55,7 @@
         const choice = document.createElement("button");
         choice.type = "button";
         choice.className = "location-option";
+        choice.tabIndex = -1;
         choice.id = `${options.id}-option-${index}`;
         choice.setAttribute("role", "option");
         choice.setAttribute("aria-selected", "false");
@@ -126,7 +129,12 @@
     };
 
     input.addEventListener("input", () => {
+      controller?.abort();
+      controller = undefined;
       hidden.value = "";
+      airports.value = "";
+      close();
+      status.textContent = "";
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(lookup, 550);
     });
